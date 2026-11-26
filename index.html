@@ -1604,6 +1604,18 @@
       updateAnsweredCounter();
     }
 
+    function isQuestionAnswered(idx) {
+      const ans = appState.answers[idx];
+      return Boolean(ans && (ans.blob || (ans.textNote && ans.textNote.trim().length > 0)));
+    }
+
+    function findFirstUnansweredIndex(maxIdx = INTERVIEW_QUESTIONS.length - 1) {
+      for (let i = 0; i <= maxIdx; i++) {
+        if (!isQuestionAnswered(i)) return i;
+      }
+      return -1;
+    }
+
     function ensureNotRecordingBeforeNavigate() {
       if (appState.isRecording) {
         showToast('Hentikan rekaman terlebih dahulu sebelum berpindah pertanyaan.', 'warning');
@@ -1623,6 +1635,11 @@
 
     function nextQuestion() {
       if (!ensureNotRecordingBeforeNavigate()) return;
+      if (!isQuestionAnswered(appState.currentIndex)) {
+        const qCode = INTERVIEW_QUESTIONS[appState.currentIndex].shortCode;
+        showToast(`Pertanyaan ${qCode} wajib diisi terlebih dahulu (rekam suara, unggah file audio, atau tulis teks).`, 'warning');
+        return;
+      }
       if (appState.currentIndex < INTERVIEW_QUESTIONS.length - 1) {
         appState.currentIndex += 1;
         renderCurrentQuestion();
@@ -1634,6 +1651,14 @@
 
     function jumpToQuestion(index) {
       if (!ensureNotRecordingBeforeNavigate()) return;
+      if (index > 0) {
+        const firstMissing = findFirstUnansweredIndex(index - 1);
+        if (firstMissing !== -1) {
+          const missingCode = INTERVIEW_QUESTIONS[firstMissing].shortCode;
+          showToast(`Pertanyaan ${missingCode} wajib diisi terlebih dahulu sebelum melompat ke soal berikutnya.`, 'warning');
+          index = firstMissing;
+        }
+      }
       appState.currentIndex = index;
       closeQuestionDrawer();
       hideAllScreens();
@@ -1702,6 +1727,14 @@
     // =========================================================
     function goToSummary() {
       if (!ensureNotRecordingBeforeNavigate()) return;
+
+      const firstMissing = findFirstUnansweredIndex();
+      if (firstMissing !== -1) {
+        const missingCode = INTERVIEW_QUESTIONS[firstMissing].shortCode;
+        showToast(`Semua pertanyaan wajib diisi sebelum dikirim. Silakan isi ${missingCode} terlebih dahulu.`, 'warning');
+        jumpToQuestion(firstMissing);
+        return;
+      }
 
       hideAllScreens();
       document.getElementById('summaryScreen').classList.remove('hidden');
@@ -1790,18 +1823,15 @@
         return;
       }
 
-      let totalItemsToProcess = 0;
-      INTERVIEW_QUESTIONS.forEach((_, idx) => {
-        const ans = appState.answers[idx];
-        if (ans && (ans.blob || (ans.textNote && ans.textNote.trim()))) {
-          totalItemsToProcess++;
-        }
-      });
-
-      if (totalItemsToProcess === 0) {
-        showToast('Rekam minimal satu jawaban suara terlebih dahulu sebelum mengirim ya.', 'warning');
+      const firstMissing = findFirstUnansweredIndex();
+      if (firstMissing !== -1) {
+        const missingCode = INTERVIEW_QUESTIONS[firstMissing].shortCode;
+        showToast(`Masih ada pertanyaan yang kosong (${missingCode}). Semua pertanyaan wajib diisi ya.`, 'warning');
+        jumpToQuestion(firstMissing);
         return;
       }
+
+      let totalItemsToProcess = INTERVIEW_QUESTIONS.length;
 
       const btnSubmit = document.getElementById('btnSubmitToResearcher');
       const progressBox = document.getElementById('uploadProgressBox');
