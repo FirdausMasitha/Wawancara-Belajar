@@ -1,0 +1,2313 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cerita Belajar Matematika — Wawancara Suara Siswa</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- JSZip untuk mengemas rekaman audio ke dalam file ZIP (Mode Peneliti) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            },
+            calm: {
+              bg: '#f8fafc',
+              card: '#ffffff',
+              accent: '#eef2ff',
+              indigo: '#4f46e5',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    @keyframes soundWave {
+      0%, 100% { transform: scaleY(0.35); }
+      50% { transform: scaleY(1); }
+    }
+    .wave-bar {
+      animation: soundWave 0.9s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(6) { animation-delay: 0.35s; }
+    .wave-bar:nth-child(7) { animation-delay: 0.1s; }
+
+    .fade-in {
+      animation: fadeIn 0.28s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    audio {
+      width: 100%;
+      height: 44px;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased selection:bg-brand-100 selection:text-brand-900">
+
+  <!-- Header Navigasi Atas -->
+  <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+          <i data-lucide="mic" class="w-5 h-5"></i>
+        </div>
+        <div class="truncate">
+          <h1 class="font-display font-bold text-sm sm:text-base text-slate-900 truncate">Cerita Belajar Matematika</h1>
+          <p id="headerSubtitle" class="text-xs text-slate-500 truncate">Wawancara Suara Siswa</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div id="headerControls" class="hidden items-center gap-2">
+          <button
+            type="button"
+            onclick="openQuestionDrawer()"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200/80 text-slate-700 transition active:scale-[0.98]"
+            title="Lihat semua daftar pertanyaan"
+          >
+            <i data-lucide="list-ordered" class="w-4 h-4 text-brand-700"></i>
+            <span class="hidden sm:inline">Daftar Soal</span>
+            <span id="answeredBadge" class="px-1.5 py-0.5 text-[11px] rounded-full bg-brand-600 text-white font-bold">0/14</span>
+          </button>
+
+          <button
+            type="button"
+            onclick="goToSummary()"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition active:scale-[0.98]"
+          >
+            <span>Tinjau & Kirim</span>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          id="btnOpenResearcherModal"
+          onclick="openResearcherLoginModal()"
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition active:scale-[0.98]"
+          title="Masuk ke Panel Peneliti"
+        >
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-amber-300"></i>
+          <span>Panel Peneliti</span>
+        </button>
+
+        <button
+          type="button"
+          id="btnExitResearcherMode"
+          onclick="exitResearcherMode()"
+          class="hidden items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition active:scale-[0.98]"
+        >
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+          <span>Mode Siswa</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notifikasi Toast -->
+  <div id="toastContainer" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md pointer-events-none flex flex-col gap-2"></div>
+
+  <!-- Konten Utama -->
+  <main class="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+    <!-- Banner Peringatan jika Firebase belum dikonfigurasi -->
+    <div id="firebaseWarningBanner" class="hidden mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 text-xs sm:text-sm space-y-1">
+      <p class="font-bold flex items-center gap-2">
+        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0"></i>
+        <span>Konfigurasi Firebase Belum Diisi</span>
+      </p>
+      <p>
+        Server penyimpanan belum terhubung. Peneliti perlu mengisi <code class="px-1.5 py-0.5 rounded bg-amber-100 font-mono text-xs">firebaseConfig</code> di dalam file <code class="px-1.5 py-0.5 rounded bg-amber-100 font-mono text-xs">index.html</code> agar jawaban siswa dapat dikirim dan dilihat di Panel Peneliti.
+      </p>
+    </div>
+
+    <!-- HALAMAN 1: PEMBUKA -->
+    <section id="welcomeScreen" class="fade-in max-w-3xl mx-auto space-y-6">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold mb-4 border border-emerald-100">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>14 Pertanyaan • Jawab langsung lewat rekaman suara</span>
+        </div>
+
+        <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-3">
+          Hai! Yuk ceritakan pengalamanmu saat belajar matematika 👋
+        </h2>
+        <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
+          Santai saja, tidak ada jawaban benar atau salah dan kamu tidak perlu mengetik panjang. Di setiap pertanyaan, cukup tekan tombol <strong class="text-slate-800">Mulai Rekam Jawaban</strong> lalu ceritakan pengalamanmu seperti sedang mengobrol biasa. Setelah selesai semua, tinggal tekan <strong class="text-slate-800">Kirim Jawaban</strong>.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-7">
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+            <div class="text-indigo-600 font-bold text-sm mb-1">1. Tekan & Cerita</div>
+            <p class="text-xs text-slate-600 leading-relaxed">Rekam jawaban suara di setiap pertanyaan (total 14 pertanyaan singkat).</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+            <div class="text-brand-600 font-bold text-sm mb-1">2. Bisa Diulang</div>
+            <p class="text-xs text-slate-600 leading-relaxed">Kamu bisa memutar ulang rekamanmu atau merekam ulang kapan saja.</p>
+          </div>
+          <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+            <div class="text-emerald-600 font-bold text-sm mb-1">3. Langsung Terkirim</div>
+            <p class="text-xs text-slate-600 leading-relaxed">Tidak perlu mengunduh file apa pun—jawaban langsung terkirim otomatis ke peneliti.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
+              <div class="sm:col-span-7">
+                <label for="studentNameInput" class="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5">
+                  Nama Siswa <span class="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="studentNameInput"
+                  placeholder="Tulis nama lengkap atau nama panggilanmu..."
+                  autocomplete="name"
+                  oninput="handleStudentNameInput(this.value)"
+                  onkeydown="if(event.key === 'Enter'){ event.preventDefault(); startInterview(); }"
+                  class="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-sm sm:text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
+                />
+              </div>
+
+              <div class="sm:col-span-5">
+                <span class="block text-xs font-bold text-slate-600 mb-1.5">
+                  Kode Responden Otomatis
+                </span>
+                <div class="flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-brand-50 border border-brand-200">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-2 h-2 rounded-full bg-brand-500 shrink-0"></span>
+                    <span id="autoCodeBadge" class="font-mono font-extrabold text-sm sm:text-base text-brand-900 tracking-wider truncate">
+                      MA-0000
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onclick="regenerateRespondentCode()"
+                    title="Buat ulang kode acak baru"
+                    class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-brand-100 text-brand-700 text-xs font-semibold border border-brand-200 shadow-2xs transition active:scale-95 shrink-0"
+                  >
+                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                    <span>Acak</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p id="nameValidationHint" class="hidden text-xs font-semibold text-rose-600">
+              Silakan isi nama siswa terlebih dahulu sebelum mulai menjawab ya.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 class="text-sm font-bold text-indigo-950">Tes Mikrofon 3 Detik <span class="font-normal text-indigo-700/80">(Opsional)</span></h3>
+                <p id="micTestStatus" class="text-xs text-indigo-800/80 mt-0.5">Cek cepat apakah suaramu sudah masuk dengan jelas sebelum mulai.</p>
+              </div>
+              <button
+                type="button"
+                id="btnTestMic"
+                onclick="runMicTest()"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-indigo-100/70 text-indigo-700 font-semibold text-xs sm:text-sm border border-indigo-200 shadow-sm transition active:scale-[0.98] shrink-0"
+              >
+                <i data-lucide="mic" class="w-4 h-4"></i>
+                <span>Tes Mikrofon 3 Detik</span>
+              </button>
+            </div>
+            <div id="micTestResultBox" class="hidden pt-2 border-t border-indigo-200/60">
+              <p class="text-xs font-medium text-emerald-700 mb-1.5 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Mikrofon aktif! Coba dengarkan hasil tes suaramu:</span>
+              </p>
+              <audio id="micTestAudio" controls></audio>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button
+              type="button"
+              onclick="startInterview()"
+              class="w-full py-4 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-display font-bold text-base sm:text-lg shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2 active:scale-[0.99]"
+            >
+              <span>Mulai Menjawab</span>
+              <i data-lucide="arrow-right" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HALAMAN 2: PERTANYAAN BERTAHAP -->
+    <section id="interviewScreen" class="hidden fade-in max-w-3xl mx-auto space-y-5">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+          <span id="sectionBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100">
+            Bagian A • Warm-up
+          </span>
+          <span id="stepCounterText" class="text-xs sm:text-sm font-bold text-slate-600">
+            Pertanyaan 1 dari 14
+          </span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+          <div id="progressBar" class="h-full bg-brand-600 rounded-full transition-all duration-300" style="width: 7.14%"></div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-3xl p-5 sm:p-8 shadow-sm border border-slate-200/80 space-y-6">
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span id="questionCodeBadge" class="text-xs font-extrabold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+              Q1
+            </span>
+            <span id="questionStatusPill" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">
+              Belum direkam
+            </span>
+          </div>
+
+          <h2 id="questionMainText" class="font-display text-xl sm:text-2xl font-bold text-slate-900 leading-snug">
+            Kalau mendengar kata matematika, apa yang pertama kali kamu pikirkan atau rasakan?
+          </h2>
+        </div>
+
+        <div id="probeBox" class="p-4 sm:p-5 rounded-2xl bg-amber-50/75 border border-amber-200/80">
+          <div class="flex items-start gap-3">
+            <div class="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+              <i data-lucide="lightbulb" class="w-4 h-4"></i>
+            </div>
+            <div class="space-y-1.5 text-sm">
+              <p class="font-bold text-amber-950">Hal-hal yang bisa kamu ceritakan:</p>
+              <div id="probeContent" class="text-amber-900/90 leading-relaxed">
+                Apa yang membuatmu berpikir atau merasa demikian?
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-5 sm:p-6 rounded-3xl bg-slate-50 border-2 border-dashed border-slate-200 space-y-5">
+          <div id="recorderIdleState" class="text-center space-y-3">
+            <p class="text-sm text-slate-600 font-medium">
+              Siap bercerita? Tekan tombol di bawah ini lalu bicaralah dengan santai.
+            </p>
+            <button
+              type="button"
+              onclick="startRecording()"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-7 py-4 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-display font-bold text-base shadow-lg shadow-brand-600/20 transition active:scale-[0.98]"
+            >
+              <span class="w-3.5 h-3.5 rounded-full bg-white"></span>
+              <span>Mulai Rekam Jawaban</span>
+            </button>
+          </div>
+
+          <div id="recorderActiveState" class="hidden text-center space-y-4">
+            <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-rose-100 text-rose-700 font-bold text-xs sm:text-sm">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping"></span>
+              <span>SEDANG MEREKAM SUARA...</span>
+            </div>
+
+            <div class="flex flex-col items-center justify-center gap-2 py-2">
+              <div class="flex items-center justify-center gap-1.5 h-10" aria-hidden="true">
+                <span class="wave-bar w-1.5 h-8 bg-rose-500 rounded-full"></span>
+                <span class="wave-bar w-1.5 h-10 bg-rose-500 rounded-full"></span>
+                <span class="wave-bar w-1.5 h-7 bg-rose-500 rounded-full"></span>
+                <span class="wave-bar w-1.5 h-10 bg-rose-500 rounded-full"></span>
+                <span class="wave-bar w-1.5 h-6 bg-rose-500 rounded-full"></span>
+                <span class="wave-bar w-1.5 h-9 bg-rose-500 rounded-full"></span>
+                <span class="wave-bar w-1.5 h-7 bg-rose-500 rounded-full"></span>
+              </div>
+              <div id="recordingTimer" class="font-display text-3xl font-extrabold text-slate-900 tracking-wider">
+                00:00
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onclick="stopRecording()"
+              class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-display font-bold text-base shadow-lg shadow-rose-600/25 transition active:scale-[0.98]"
+            >
+              <span class="w-3.5 h-3.5 rounded-sm bg-white"></span>
+              <span>Selesai Rekam</span>
+            </button>
+          </div>
+
+          <div id="recorderDoneState" class="hidden space-y-4">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 text-emerald-700 font-bold text-sm">
+                <i data-lucide="check-circle-2" class="w-5 h-5 shrink-0"></i>
+                <span>Jawaban suara siap dikirim</span>
+              </div>
+              <span id="savedDurationBadge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800">
+                Durasi: 00:00
+              </span>
+            </div>
+
+            <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+              <audio id="answerAudioPlayer" controls></audio>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <button
+                type="button"
+                onclick="startRecording()"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs sm:text-sm border border-slate-300 transition active:scale-[0.98]"
+              >
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-rose-600"></i>
+                <span>Rekam Ulang Jawaban</span>
+              </button>
+
+              <button
+                type="button"
+                onclick="deleteCurrentRecording()"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold text-xs sm:text-sm transition"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <span>Hapus</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="micErrorBox" class="hidden p-4 rounded-2xl bg-rose-50 border border-rose-200 text-left space-y-1.5">
+            <p class="text-sm font-bold text-rose-800">Mikrofon belum dapat diakses</p>
+            <p id="micErrorMessage" class="text-xs text-rose-700 leading-relaxed">
+              Browser memblokir akses mikrofon. Izinkan mikrofon di ikon gembok/kamera pada bilah alamat browser, atau gunakan opsi <strong>Unggah File Audio</strong> / <strong>Catatan Teks</strong> di bawah ini.
+            </p>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-100 pt-4">
+          <button
+            type="button"
+            onclick="toggleFallbackPanel()"
+            class="w-full flex items-center justify-between text-left text-xs sm:text-sm font-semibold text-slate-500 hover:text-slate-800 py-1.5 transition"
+          >
+            <span>Opsi Tambahan: Unggah rekaman dari HP atau tulis catatan singkat</span>
+            <i id="fallbackChevron" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
+          </button>
+
+          <div id="fallbackPanel" class="hidden mt-3 space-y-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                Unggah File Audio (MP3, M4A, WAV, WEBM, OGG)
+              </label>
+              <label class="flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl bg-white border border-slate-300 hover:border-brand-500 cursor-pointer text-xs sm:text-sm font-semibold text-slate-700 transition">
+                <i data-lucide="upload" class="w-4 h-4 text-brand-600"></i>
+                <span>Pilih File Audio dari Perangkat</span>
+                <input type="file" id="audioUploadInput" accept="audio/*" class="hidden" onchange="handleAudioUpload(event)" />
+              </label>
+            </div>
+
+            <div>
+              <label for="optionalTextNote" class="block text-xs font-bold text-slate-700 mb-1.5">
+                Catatan Teks Tambahan <span class="font-normal text-slate-500">(Opsional, jika mikrofon sedang bermasalah atau ingin menambah cerita)</span>
+              </label>
+              <textarea
+                id="optionalTextNote"
+                rows="3"
+                oninput="saveCurrentTextNote(this.value)"
+                placeholder="Tulis catatan tambahan di sini jika perlu..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 pt-1">
+        <button
+          type="button"
+          id="btnPrevQuestion"
+          onclick="prevQuestion()"
+          class="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-sm sm:text-base border border-slate-300 shadow-xs transition active:scale-[0.98]"
+        >
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>Sebelumnya</span>
+        </button>
+
+        <button
+          type="button"
+          id="btnNextQuestion"
+          onclick="nextQuestion()"
+          class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-brand-600 hover:bg-brand-700 text-white font-display font-bold text-sm sm:text-base shadow-md shadow-brand-600/20 transition active:scale-[0.98]"
+        >
+          <span id="btnNextLabel">Pertanyaan Selanjutnya</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- HALAMAN 3: TINJAU & KIRIM -->
+    <section id="summaryScreen" class="hidden fade-in max-w-3xl mx-auto space-y-6">
+      <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold mb-2">
+              Langkah Terakhir • Kirim ke Peneliti
+            </span>
+            <h2 class="font-display text-2xl font-extrabold text-slate-900">
+              Cek jawabanmu sebelum dikirim ✨
+            </h2>
+            <p id="summaryStudentMeta" class="text-sm text-slate-500 mt-0.5">
+              Status: 0 dari 14 pertanyaan telah diisi
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onclick="backToInterview()"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition shrink-0"
+          >
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <span>Kembali ke Pertanyaan</span>
+          </button>
+        </div>
+
+        <div class="p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-brand-50 to-indigo-50/80 border border-brand-200/80 space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <h3 class="font-display font-bold text-base sm:text-lg text-slate-900">
+                Sudah siap mengirim ceritamu?
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Tekan tombol <strong>Kirim Jawaban ke Peneliti</strong>. Semua rekamanmu akan langsung tersimpan aman untuk peneliti tanpa perlu mengunduh file apa pun ke HP/laptopmu.
+              </p>
+            </div>
+            <button
+              type="button"
+              id="btnSubmitToResearcher"
+              onclick="submitInterviewToCloud()"
+              class="inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-display font-bold text-sm sm:text-base shadow-lg shadow-indigo-600/20 transition active:scale-[0.98] shrink-0"
+            >
+              <i data-lucide="send" class="w-5 h-5"></i>
+              <span>Kirim Jawaban ke Peneliti</span>
+            </button>
+          </div>
+
+          <div id="uploadProgressBox" class="hidden pt-3 border-t border-indigo-200/70 space-y-2">
+            <div class="flex items-center justify-between text-xs font-bold text-indigo-900">
+              <span id="uploadProgressText">Mengunggah rekaman suara...</span>
+              <span id="uploadProgressPercent">0%</span>
+            </div>
+            <div class="w-full h-3 bg-white rounded-full overflow-hidden border border-indigo-200">
+              <div id="uploadProgressBar" class="h-full bg-indigo-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <h3 class="font-display font-bold text-base text-slate-800">Rincian Jawaban Per Pertanyaan</h3>
+          <div id="summaryListContainer" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HALAMAN 4: SUKSES PENGIRIMAN -->
+    <section id="submittedSuccessScreen" class="hidden fade-in max-w-2xl mx-auto">
+      <div class="bg-white rounded-3xl p-7 sm:p-10 shadow-sm border border-slate-200/80 text-center space-y-6">
+        <div class="w-20 h-20 rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
+          <i data-lucide="check-circle-2" class="w-11 h-11"></i>
+        </div>
+
+        <div class="space-y-2.5">
+          <span id="submittedCodeChip" class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-brand-50 text-brand-800 font-mono text-xs font-bold border border-brand-200">
+            Kode Responden: MA-0000
+          </span>
+          <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">
+            Terima kasih! Jawaban rekamanmu sudah berhasil terkirim ke peneliti.
+          </h2>
+          <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-lg mx-auto">
+            Kamu sudah boleh menutup halaman ini sekarang. Terima kasih banyak sudah meluangkan waktu untuk berbagi cerita pengalaman belajar matematikamu!
+          </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 max-w-md mx-auto">
+          <p id="submittedDetailsText">Terkirim pada —</p>
+        </div>
+
+        <div class="pt-2">
+          <button
+            type="button"
+            onclick="resetForNewStudentSession()"
+            class="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-display font-bold text-sm transition active:scale-[0.98]"
+          >
+            <i data-lucide="user-plus" class="w-4 h-4"></i>
+            <span>Mulai Sesi Siswa Baru</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- HALAMAN 5: PANEL PENELITI -->
+    <section id="researcherDashboardScreen" class="hidden fade-in space-y-6">
+      <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80 space-y-5">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-amber-300 text-xs font-bold mb-2">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+              <span>Mode Peneliti Terautentikasi</span>
+            </div>
+            <h2 class="font-display text-2xl font-extrabold text-slate-900">
+              Data Rekaman Wawancara Siswa
+            </h2>
+            <p id="researcherStatsText" class="text-sm text-slate-500 mt-0.5">
+              Memuat data responden...
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onclick="openChangePinModal()"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition"
+            >
+              <i data-lucide="key-round" class="w-4 h-4 text-slate-600"></i>
+              <span>Ganti PIN</span>
+            </button>
+
+            <button
+              type="button"
+              id="btnDownloadAllRespondentsZip"
+              onclick="downloadAllRespondentsZip()"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-display font-bold text-xs sm:text-sm shadow-md shadow-indigo-600/20 transition active:scale-[0.98]"
+            >
+              <i data-lucide="archive" class="w-4 h-4"></i>
+              <span>Unduh Semua Data (ZIP)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input
+              type="text"
+              id="researcherSearchInput"
+              oninput="renderResearcherList()"
+              placeholder="Cari berdasarkan nama siswa atau kode responden (misal: MA-4821)..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
+          <div class="text-xs text-slate-500 font-medium px-2">
+            Total terkumpul: <strong id="totalSubmissionsBadge" class="text-slate-900">0</strong> responden
+          </div>
+        </div>
+
+        <div id="researcherSubmissionsList" class="space-y-4"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL NAVIGATOR PERTANYAAN -->
+  <div id="questionDrawerModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-xl max-h-[88vh] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden fade-in">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 class="font-display font-bold text-base sm:text-lg text-slate-900">Daftar Semua Pertanyaan</h3>
+          <p class="text-xs text-slate-500">Pilih nomor pertanyaan untuk melompat langsung</p>
+        </div>
+        <button
+          type="button"
+          onclick="closeQuestionDrawer()"
+          class="p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition"
+          aria-label="Tutup daftar pertanyaan"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="drawerQuestionList" class="p-4 sm:p-5 overflow-y-auto space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- MODAL LOGIN PIN PENELITI -->
+  <div id="researcherLoginModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 sm:p-7 shadow-2xl border border-slate-200 space-y-5 fade-in">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-slate-900 text-amber-300 flex items-center justify-center shrink-0">
+            <i data-lucide="lock" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-lg text-slate-900">Akses Panel Peneliti</h3>
+            <p class="text-xs text-slate-500">Masukkan PIN untuk melihat & mengunduh rekaman siswa</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onclick="closeResearcherLoginModal()"
+          class="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        >
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label for="researcherPinInput" class="block text-xs font-bold text-slate-700 mb-1.5">PIN Peneliti</label>
+          <input
+            type="password"
+            id="researcherPinInput"
+            inputmode="numeric"
+            maxlength="12"
+            placeholder="••••"
+            onkeydown="if(event.key === 'Enter'){ event.preventDefault(); verifyResearcherPin(); }"
+            class="w-full px-4 py-3 rounded-xl border border-slate-300 text-center font-mono text-xl tracking-[0.4em] font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <p id="pinErrorMsg" class="hidden text-xs font-semibold text-rose-600 mt-1.5">
+            PIN salah. Silakan periksa kembali PIN peneliti Anda.
+          </p>
+        </div>
+
+        <div id="defaultPinHintBox" class="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2">
+          <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+          <span>PIN default awal adalah <strong class="font-mono">2026</strong>. Anda dapat menggantinya setelah masuk ke Panel Peneliti.</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-1">
+        <button
+          type="button"
+          onclick="closeResearcherLoginModal()"
+          class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 transition"
+        >
+          Batal
+        </button>
+        <button
+          type="button"
+          onclick="verifyResearcherPin()"
+          class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-display font-bold text-xs sm:text-sm transition"
+        >
+          Masuk Panel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GANTI PIN PENELITI -->
+  <div id="changePinModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 space-y-4 fade-in">
+      <div class="flex items-center justify-between">
+        <h3 class="font-display font-bold text-lg text-slate-900">Ganti PIN Peneliti</h3>
+        <button type="button" onclick="closeChangePinModal()" class="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-600">
+        PIN baru akan tersimpan di database penelitian sehingga berlaku di perangkat mana pun Anda membuka aplikasi ini.
+      </p>
+      <div>
+        <label for="newPinInput" class="block text-xs font-bold text-slate-700 mb-1.5">PIN Baru (minimal 4 digit/karakter)</label>
+        <input
+          type="text"
+          id="newPinInput"
+          maxlength="12"
+          placeholder="Contoh: 4589"
+          class="w-full px-4 py-3 rounded-xl border border-slate-300 font-mono text-base font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeChangePinModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+          Batal
+        </button>
+        <button type="button" onclick="saveNewResearcherPin()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm">
+          Simpan PIN Baru
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL KONFIRMASI HAPUS -->
+  <div id="deleteConfirmModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 space-y-4 fade-in">
+      <div class="flex items-center gap-3 text-rose-600">
+        <div class="w-10 h-10 rounded-2xl bg-rose-100 flex items-center justify-center shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <h3 class="font-display font-bold text-lg text-slate-900">Hapus Data Responden?</h3>
+      </div>
+      <p id="deleteConfirmText" class="text-sm text-slate-600 leading-relaxed">
+        Apakah Anda yakin ingin menghapus data responden ini secara permanen?
+      </p>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeDeleteConfirmModal()" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100">
+          Batal
+        </button>
+        <button
+          type="button"
+          id="btnConfirmDeleteSubmission"
+          onclick="executeDeleteSubmission()"
+          class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs sm:text-sm"
+        >
+          Ya, Hapus Permanen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="py-5 text-center text-xs text-slate-400">
+    Panduan Wawancara Penelitian • Mathematics Anxiety • Dirancang ramah siswa
+  </footer>
+
+  <!-- INTEGRASI FIREBASE & LOGIKA APLIKASI -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      deleteDoc,
+      collection,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import {
+      getStorage,
+      ref as storageRef,
+      uploadBytes,
+      getDownloadURL,
+      deleteObject
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+    // =========================================================
+    // KONFIGURASI FIREBASE (WAJIB DIISI DARI FIREBASE CONSOLE)
+    // =========================================================
+    const appId = 'wawancara-matematika';
+    const firebaseConfig = {
+      apiKey: "AIzaSyAdg20ALP1aCgOd-TMJSbyi9W2PcyG084s",
+      authDomain: "wawancara-matematika.firebaseapp.com",
+      projectId: "wawancara-matematika",
+      storageBucket: "wawancara-matematika.firebasestorage.app",
+      messagingSenderId: "662925400123",
+      appId: "1:662925400123:web:0fd376de1812538496a41e"
+    };
+
+    function isFirebaseConfigured() {
+      return (
+        firebaseConfig &&
+        firebaseConfig.apiKey &&
+        !firebaseConfig.apiKey.startsWith('GANTI_DENGAN') &&
+        firebaseConfig.projectId &&
+        !firebaseConfig.projectId.startsWith('GANTI_DENGAN')
+      );
+    }
+
+    let app = null;
+    let auth = null;
+    let db = null;
+    let storage = null;
+    let currentUser = null;
+    let submissionsUnsubscribe = null;
+
+    if (isFirebaseConfigured()) {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      storage = getStorage(app);
+
+      onAuthStateChanged(auth, (user) => {
+        currentUser = user;
+      });
+    }
+
+    async function initFirebaseAuth() {
+      if (!auth) return null;
+      if (auth.currentUser) {
+        currentUser = auth.currentUser;
+        return currentUser;
+      }
+      try {
+        const cred = await signInAnonymously(auth);
+        currentUser = cred.user;
+        return currentUser;
+      } catch (err) {
+        console.error("Gagal autentikasi layanan penyimpanan:", err);
+        return null;
+      }
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // =========================================================
+    // 1. DATA LENGKAP PERTANYAAN WAWANCARA
+    // =========================================================
+    const INTERVIEW_QUESTIONS = [
+      {
+        id: 'Q01',
+        shortCode: 'Q1',
+        section: 'Bagian A • Warm-up',
+        question: 'Kalau mendengar kata matematika, apa yang pertama kali kamu pikirkan atau rasakan?',
+        probes: ['Apa yang membuatmu berpikir atau merasa demikian?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q02',
+        shortCode: 'Q2',
+        section: 'Bagian A • Warm-up',
+        question: 'Bisa ceritakan pengalaman belajar matematika yang paling kamu ingat?',
+        probes: ['Mengapa pengalaman itu paling kamu ingat?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q03',
+        shortCode: 'Q3',
+        section: 'Bagian B • RQ1 – Pengalaman emosi, tubuh, dan pikiran',
+        question: 'Ceritakan satu kejadian ketika kamu merasa takut, gugup, khawatir, atau tertekan saat belajar matematika.',
+        probes: ['Kapan dan di mana? Sedang melakukan apa? Siapa yang hadir?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q04',
+        shortCode: 'Q4',
+        section: 'Bagian B • RQ1 – Pengalaman emosi, tubuh, dan pikiran',
+        question: 'Saat kejadian itu, apa yang kamu rasakan pada tubuhmu? (sakit perut, tangan dingin, jantung berdebar, pusing, lemas)',
+        probes: ['Adakah perubahan tubuh yang kamu sadari? Jelaskan dengan kata-katamu sendiri.'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q05',
+        shortCode: 'Q5',
+        section: 'Bagian B • RQ1 – Pengalaman emosi, tubuh, dan pikiran',
+        question: 'Apa yang ada di pikiranmu ketika perasaan tersebut muncul?',
+        probes: ['Apa yang kamu pikirkan tentang soal atau kemampuanmu? Bagaimana konsentrasimu?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q06',
+        shortCode: 'Q6',
+        section: 'Bagian B • RQ1 – Pengalaman emosi, tubuh, dan pikiran',
+        question: 'Apakah perasaanmu berubah sebelum, saat, dan setelah kegiatan matematika itu? Bagaimana ceritanya?',
+        probes: ['Kapan paling kuat? Apa yang membuatnya berubah?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q07',
+        shortCode: 'Q7',
+        section: 'Bagian C • RQ2 – Pemicu dan pengalaman sebelumnya',
+        question: 'Menurutmu, apa saja beberapa faktor yang membuat perasaan tersebut muncul pada saat itu?',
+        probes: ['Apa yang terjadi tepat sebelumnya?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q08',
+        shortCode: 'Q8',
+        section: 'Bagian C • RQ2 – Pemicu dan pengalaman sebelumnya',
+        question: 'Apakah kamu pernah mengalami kejadian sebelumnya yang membuatmu merasa takut atau khawatir terhadap matematika? Ceritakan.',
+        probes: ['Kapan pertama kali kamu ingat? Apakah terjadi berulang?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q09',
+        shortCode: 'Q9',
+        section: 'Bagian C • RQ2 – Pemicu dan pengalaman sebelumnya',
+        question: 'Bagaimana tanggapan guru, teman, atau keluarga berpengaruh pada perasaanmu ketika belajar matematika?',
+        probes: ['Bisakah beri contoh yang membuatmu lebih nyaman atau lebih tertekan?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q10',
+        shortCode: 'Q10',
+        section: 'Bagian D • RQ3 – Respons, partisipasi, dan dukungan',
+        question: 'Ketika perasaan itu muncul, apa yang biasanya kamu lakukan?',
+        probes: ['Apa yang kamu lakukan selanjutnya? Meminta bantuan, tetap mencoba, atau hal lain?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q11',
+        shortCode: 'Q11',
+        section: 'Bagian D • RQ3 – Respons, partisipasi, dan dukungan',
+        question: 'Bagaimana perasaan itu memengaruhi caramu berpikir, menjawab soal, bertanya, atau mengikuti pelajaran matematika?',
+        probes: ['Ceritakan kejadian tertentu yang menunjukkan pengaruh itu.'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Q12',
+        shortCode: 'Q12',
+        section: 'Bagian D • RQ3 – Respons, partisipasi, dan dukungan',
+        question: 'Apa yang biasanya membuatmu merasa lebih tenang atau percaya diri saat belajar matematika?',
+        probes: ['Kapan terakhir hal itu membantu? Apa yang berbeda?'],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Penutup1',
+        shortCode: 'Penutup 1',
+        section: 'Bagian E • Pertanyaan Penutup',
+        question: 'Kalau kamu boleh mengubah satu hal dari cara diajarkan agar siswa merasa lebih nyaman, apa yang ingin kamu ubah? Mengapa?',
+        probes: [],
+        isFlexibleProbe: false
+      },
+      {
+        id: 'Penutup2',
+        shortCode: 'Penutup 2',
+        section: 'Bagian E • Pertanyaan Penutup',
+        question: 'Apakah ada pengalaman lain tentang matematika yang ingin kamu ceritakan?',
+        probes: [
+          'Bisa ceritakan satu contoh konkret?',
+          'Apa yang terjadi tepat sebelum/sesudahnya?',
+          'Waktu itu apa yang kamu pikirkan?',
+          'Apa yang membuatmu merasa demikian?',
+          'Apakah ada pengalaman yang berbeda?'
+        ],
+        isFlexibleProbe: true
+      }
+    ];
+
+    // =========================================================
+    // 2. STATE APLIKASI
+    // =========================================================
+    const appState = {
+      studentName: '',
+      respondentCode: '',
+      sessionTimestamp: '',
+      currentIndex: 0,
+      answers: {},
+      isRecording: false,
+      mediaRecorder: null,
+      audioChunks: [],
+      activeStream: null,
+      timerInterval: null,
+      recordingSeconds: 0,
+      isResearcherAuthenticated: false,
+      activeResearcherPin: '2026',
+      isCustomPinSet: false,
+      submissions: [],
+      expandedRespondentId: null,
+      pendingDeleteDocId: null
+    };
+
+    // =========================================================
+    // 3. HELPER FORMAT & INISIALISASI
+    // =========================================================
+    function formatDuration(totalSeconds) {
+      const mins = Math.floor(totalSeconds / 60);
+      const secs = Math.floor(totalSeconds % 60);
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function generateRespondentCode() {
+      const randomFourDigits = Math.floor(1000 + Math.random() * 9000);
+      return `MA-${randomFourDigits}`;
+    }
+
+    function regenerateRespondentCode() {
+      appState.respondentCode = generateRespondentCode();
+      const badge = document.getElementById('autoCodeBadge');
+      if (badge) badge.textContent = appState.respondentCode;
+      showToast(`Kode responden diperbarui menjadi ${appState.respondentCode}`, 'info');
+    }
+
+    function handleStudentNameInput(val) {
+      appState.studentName = val;
+      if (val.trim().length > 0) {
+        document.getElementById('nameValidationHint').classList.add('hidden');
+        document.getElementById('studentNameInput').classList.remove('border-rose-400', 'ring-2', 'ring-rose-200');
+      }
+    }
+
+    function createSessionTimestamp() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const hh = String(now.getHours()).padStart(2, '0');
+      const min = String(now.getMinutes()).padStart(2, '0');
+      return `${yyyy}${mm}${dd}_${hh}${min}`;
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const styles = {
+        success: 'bg-emerald-800 text-white border-emerald-700',
+        warning: 'bg-amber-800 text-white border-amber-700',
+        error: 'bg-rose-800 text-white border-rose-700',
+        info: 'bg-slate-800 text-white border-slate-700'
+      };
+      toast.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-lg border text-xs sm:text-sm font-medium text-center fade-in ${styles[type] || styles.info}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.25s ease';
+        setTimeout(() => toast.remove(), 260);
+      }, 3400);
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str || '';
+      return div.innerHTML;
+    }
+
+    function refreshLucideIcons() {
+      if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+      }
+    }
+
+    async function loadResearcherSettings() {
+      if (!isFirebaseConfigured()) return;
+      const user = await initFirebaseAuth();
+      if (!user || !db) return;
+      try {
+        const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'researcher_settings', 'config');
+        const snap = await getDoc(settingsRef);
+        if (snap.exists() && snap.data().pin) {
+          appState.activeResearcherPin = String(snap.data().pin);
+          appState.isCustomPinSet = appState.activeResearcherPin !== '2026';
+        }
+      } catch (err) {
+        console.warn('Menggunakan PIN default:', err);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      appState.respondentCode = generateRespondentCode();
+      document.getElementById('autoCodeBadge').textContent = appState.respondentCode;
+      if (!isFirebaseConfigured()) {
+        document.getElementById('firebaseWarningBanner').classList.remove('hidden');
+      }
+      refreshLucideIcons();
+      await loadResearcherSettings();
+    });
+
+    // =========================================================
+    // 4. DETEKSI FORMAT AUDIO & TES MIKROFON
+    // =========================================================
+    function getSupportedAudioMime() {
+      const types = [
+        { mime: 'audio/webm;codecs=opus', ext: 'webm' },
+        { mime: 'audio/webm', ext: 'webm' },
+        { mime: 'audio/mp4', ext: 'm4a' },
+        { mime: 'audio/ogg;codecs=opus', ext: 'ogg' },
+        { mime: 'audio/ogg', ext: 'ogg' }
+      ];
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported) {
+        for (const item of types) {
+          if (MediaRecorder.isTypeSupported(item.mime)) {
+            return item;
+          }
+        }
+      }
+      return { mime: '', ext: 'webm' };
+    }
+
+    async function runMicTest() {
+      const btn = document.getElementById('btnTestMic');
+      const statusEl = document.getElementById('micTestStatus');
+      const resultBox = document.getElementById('micTestResultBox');
+      const audioEl = document.getElementById('micTestAudio');
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        statusEl.textContent = 'Browser ini tidak mendukung perekaman mikrofon langsung. Kamu tetap bisa mengunggah file audio dari HP.';
+        statusEl.className = 'text-xs text-rose-700 font-semibold mt-0.5';
+        return;
+      }
+
+      try {
+        btn.disabled = true;
+        btn.classList.add('opacity-60');
+        statusEl.textContent = 'Merekam tes suara selama 3 detik... Coba ucapkan "Halo, tes suara!"';
+        statusEl.className = 'text-xs text-rose-700 font-bold mt-0.5';
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const { mime } = getSupportedAudioMime();
+        const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        const chunks = [];
+
+        recorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) chunks.push(e.data);
+        };
+
+        recorder.onstop = () => {
+          stream.getTracks().forEach((t) => t.stop());
+          const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+          const url = URL.createObjectURL(blob);
+          audioEl.src = url;
+          resultBox.classList.remove('hidden');
+          statusEl.textContent = 'Tes mikrofon selesai! Kamu bisa mendengarkannya di bawah.';
+          statusEl.className = 'text-xs text-emerald-700 font-semibold mt-0.5';
+          btn.disabled = false;
+          btn.classList.remove('opacity-60');
+        };
+
+        recorder.start();
+        setTimeout(() => {
+          if (recorder.state === 'recording') recorder.stop();
+        }, 3100);
+      } catch (err) {
+        btn.disabled = false;
+        btn.classList.remove('opacity-60');
+        statusEl.textContent = 'Izin mikrofon ditolak atau diblokir browser. Pastikan izinkan mikrofon di bilah alamat browser.';
+        statusEl.className = 'text-xs text-rose-700 font-semibold mt-0.5';
+      }
+    }
+
+    // =========================================================
+    // 5. ALUR WAWANCARA SISWA
+    // =========================================================
+    function startInterview() {
+      const nameInput = document.getElementById('studentNameInput');
+      const cleanedName = (nameInput.value || '').trim();
+
+      if (!cleanedName) {
+        document.getElementById('nameValidationHint').classList.remove('hidden');
+        nameInput.classList.add('border-rose-400', 'ring-2', 'ring-rose-200');
+        nameInput.focus();
+        showToast('Isi nama siswa terlebih dahulu sebelum mulai menjawab ya.', 'warning');
+        return;
+      }
+
+      appState.studentName = cleanedName;
+      if (!appState.respondentCode) appState.respondentCode = generateRespondentCode();
+      if (!appState.sessionTimestamp) appState.sessionTimestamp = createSessionTimestamp();
+
+      document.getElementById('headerSubtitle').textContent = `${appState.studentName} • Kode: ${appState.respondentCode}`;
+
+      hideAllScreens();
+      document.getElementById('interviewScreen').classList.remove('hidden');
+      document.getElementById('headerControls').classList.remove('hidden');
+      document.getElementById('headerControls').classList.add('flex');
+
+      renderCurrentQuestion();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hideAllScreens() {
+      ['welcomeScreen', 'interviewScreen', 'summaryScreen', 'submittedSuccessScreen', 'researcherDashboardScreen'].forEach((id) => {
+        document.getElementById(id).classList.add('hidden');
+      });
+    }
+
+    function renderCurrentQuestion() {
+      const idx = appState.currentIndex;
+      const total = INTERVIEW_QUESTIONS.length;
+      const q = INTERVIEW_QUESTIONS[idx];
+      const existingAnswer = appState.answers[idx];
+
+      document.getElementById('sectionBadge').textContent = q.section;
+      document.getElementById('stepCounterText').textContent = `Pertanyaan ${idx + 1} dari ${total}`;
+      document.getElementById('progressBar').style.width = `${((idx + 1) / total) * 100}%`;
+
+      document.getElementById('questionCodeBadge').textContent = q.shortCode;
+      document.getElementById('questionMainText').textContent = q.question;
+
+      const probeBox = document.getElementById('probeBox');
+      const probeContent = document.getElementById('probeContent');
+      if (q.probes && q.probes.length > 0) {
+        probeBox.classList.remove('hidden');
+        if (q.isFlexibleProbe) {
+          probeContent.innerHTML = `
+            <p class="text-xs font-semibold text-amber-800 mb-1.5">Beberapa ide pertanyaan lanjutan yang bisa kamu ceritakan:</p>
+            <ul class="list-disc pl-5 space-y-1">
+              ${q.probes.map((p) => `<li>${p}</li>`).join('')}
+            </ul>
+          `;
+        } else {
+          probeContent.innerHTML = `<p>${q.probes[0]}</p>`;
+        }
+      } else {
+        probeBox.classList.add('hidden');
+      }
+
+      document.getElementById('micErrorBox').classList.add('hidden');
+      const statusPill = document.getElementById('questionStatusPill');
+      const idleState = document.getElementById('recorderIdleState');
+      const activeState = document.getElementById('recorderActiveState');
+      const doneState = document.getElementById('recorderDoneState');
+      const audioPlayer = document.getElementById('answerAudioPlayer');
+
+      activeState.classList.add('hidden');
+
+      if (existingAnswer && existingAnswer.blob) {
+        idleState.classList.add('hidden');
+        doneState.classList.remove('hidden');
+        audioPlayer.src = existingAnswer.url;
+        document.getElementById('savedDurationBadge').textContent = `Durasi: ${formatDuration(existingAnswer.durationSec || 0)}`;
+        statusPill.textContent = 'Sudah direkam';
+        statusPill.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700';
+      } else {
+        doneState.classList.add('hidden');
+        idleState.classList.remove('hidden');
+        audioPlayer.removeAttribute('src');
+        statusPill.textContent = existingAnswer && existingAnswer.textNote ? 'Ada catatan teks' : 'Belum direkam';
+        statusPill.className = existingAnswer && existingAnswer.textNote
+          ? 'text-xs font-bold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700'
+          : 'text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-500';
+      }
+
+      document.getElementById('optionalTextNote').value = (existingAnswer && existingAnswer.textNote) ? existingAnswer.textNote : '';
+      document.getElementById('audioUploadInput').value = '';
+
+      const btnPrev = document.getElementById('btnPrevQuestion');
+      btnPrev.disabled = idx === 0;
+      btnPrev.classList.toggle('opacity-40', idx === 0);
+      btnPrev.classList.toggle('pointer-events-none', idx === 0);
+
+      const btnNextLabel = document.getElementById('btnNextLabel');
+      btnNextLabel.textContent = idx === total - 1 ? 'Tinjau & Kirim Jawaban' : 'Pertanyaan Selanjutnya';
+
+      updateAnsweredCounter();
+      refreshLucideIcons();
+    }
+
+    function updateAnsweredCounter() {
+      const total = INTERVIEW_QUESTIONS.length;
+      let count = 0;
+      for (let i = 0; i < total; i++) {
+        if (appState.answers[i] && (appState.answers[i].blob || (appState.answers[i].textNote && appState.answers[i].textNote.trim()))) {
+          count++;
+        }
+      }
+      document.getElementById('answeredBadge').textContent = `${count}/${total}`;
+    }
+
+    // =========================================================
+    // 6. PEREKAMAN SUARA (MediaRecorder API)
+    // =========================================================
+    async function startRecording() {
+      if (appState.isRecording) return;
+
+      const micErrorBox = document.getElementById('micErrorBox');
+      const micErrorMessage = document.getElementById('micErrorMessage');
+      micErrorBox.classList.add('hidden');
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        micErrorMessage.textContent = 'Browser yang kamu pakai belum mendukung perekaman suara langsung. Silakan gunakan tombol "Pilih File Audio dari Perangkat" di bagian Opsi Tambahan.';
+        micErrorBox.classList.remove('hidden');
+        document.getElementById('fallbackPanel').classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        appState.activeStream = stream;
+        appState.audioChunks = [];
+        appState.recordingSeconds = 0;
+
+        const { mime, ext } = getSupportedAudioMime();
+        const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        appState.mediaRecorder = recorder;
+        appState.isRecording = true;
+
+        const targetIndex = appState.currentIndex;
+
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) appState.audioChunks.push(event.data);
+        };
+
+        recorder.onstop = () => {
+          if (appState.activeStream) {
+            appState.activeStream.getTracks().forEach((track) => track.stop());
+            appState.activeStream = null;
+          }
+
+          clearInterval(appState.timerInterval);
+          appState.isRecording = false;
+
+          const finalDuration = Math.max(1, appState.recordingSeconds);
+          const blob = new Blob(appState.audioChunks, { type: recorder.mimeType || 'audio/webm' });
+
+          if (appState.answers[targetIndex] && appState.answers[targetIndex].url) {
+            URL.revokeObjectURL(appState.answers[targetIndex].url);
+          }
+
+          const audioUrl = URL.createObjectURL(blob);
+          const prevText = appState.answers[targetIndex] ? appState.answers[targetIndex].textNote : '';
+
+          appState.answers[targetIndex] = {
+            blob,
+            url: audioUrl,
+            durationSec: finalDuration,
+            ext,
+            textNote: prevText,
+            source: 'rekaman'
+          };
+
+          renderCurrentQuestion();
+          showToast('Rekaman suara berhasil disimpan sementara!', 'success');
+        };
+
+        document.getElementById('recorderIdleState').classList.add('hidden');
+        document.getElementById('recorderDoneState').classList.add('hidden');
+        document.getElementById('recorderActiveState').classList.remove('hidden');
+        document.getElementById('recordingTimer').textContent = '00:00';
+
+        recorder.start(250);
+
+        appState.timerInterval = setInterval(() => {
+          appState.recordingSeconds += 1;
+          document.getElementById('recordingTimer').textContent = formatDuration(appState.recordingSeconds);
+        }, 1000);
+      } catch (err) {
+        appState.isRecording = false;
+        micErrorMessage.innerHTML = 'Akses mikrofon tidak diizinkan atau diblokir oleh browser. Klik ikon <strong>Gembok / Mikrofon</strong> di bilah alamat browser untuk mengizinkan, atau buka <strong>Opsi Tambahan</strong> di bawah untuk mengunggah rekaman suara dari HP.';
+        micErrorBox.classList.remove('hidden');
+        document.getElementById('fallbackPanel').classList.remove('hidden');
+      }
+    }
+
+    function stopRecording() {
+      if (appState.mediaRecorder && appState.mediaRecorder.state === 'recording') {
+        appState.mediaRecorder.stop();
+      }
+    }
+
+    function deleteCurrentRecording() {
+      const idx = appState.currentIndex;
+      if (appState.answers[idx]) {
+        if (appState.answers[idx].url) URL.revokeObjectURL(appState.answers[idx].url);
+        const keepNote = appState.answers[idx].textNote || '';
+        if (keepNote.trim()) {
+          appState.answers[idx] = { textNote: keepNote };
+        } else {
+          delete appState.answers[idx];
+        }
+      }
+      renderCurrentQuestion();
+      showToast('Rekaman pada pertanyaan ini dihapus.', 'info');
+    }
+
+    function toggleFallbackPanel() {
+      const panel = document.getElementById('fallbackPanel');
+      const chevron = document.getElementById('fallbackChevron');
+      panel.classList.toggle('hidden');
+      chevron.classList.toggle('rotate-180');
+    }
+
+    function handleAudioUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const idx = appState.currentIndex;
+      const extMatch = file.name.split('.').pop();
+      const ext = extMatch ? extMatch.toLowerCase() : 'mp3';
+      const url = URL.createObjectURL(file);
+
+      const tempAudio = new Audio(url);
+      tempAudio.addEventListener('loadedmetadata', () => {
+        const dur = isFinite(tempAudio.duration) ? Math.round(tempAudio.duration) : 0;
+        const prevText = appState.answers[idx] ? appState.answers[idx].textNote : '';
+        if (appState.answers[idx] && appState.answers[idx].url) URL.revokeObjectURL(appState.answers[idx].url);
+        appState.answers[idx] = { blob: file, url, durationSec: dur, ext, textNote: prevText, source: 'unggah' };
+        renderCurrentQuestion();
+        showToast('File audio berhasil dilampirkan!', 'success');
+      });
+
+      tempAudio.addEventListener('error', () => {
+        const prevText = appState.answers[idx] ? appState.answers[idx].textNote : '';
+        appState.answers[idx] = { blob: file, url, durationSec: 0, ext, textNote: prevText, source: 'unggah' };
+        renderCurrentQuestion();
+        showToast('File audio dilampirkan.', 'success');
+      });
+    }
+
+    function saveCurrentTextNote(value) {
+      const idx = appState.currentIndex;
+      if (!appState.answers[idx]) appState.answers[idx] = {};
+      appState.answers[idx].textNote = value;
+      updateAnsweredCounter();
+    }
+
+    function ensureNotRecordingBeforeNavigate() {
+      if (appState.isRecording) {
+        showToast('Hentikan rekaman terlebih dahulu sebelum berpindah pertanyaan.', 'warning');
+        return false;
+      }
+      return true;
+    }
+
+    function prevQuestion() {
+      if (!ensureNotRecordingBeforeNavigate()) return;
+      if (appState.currentIndex > 0) {
+        appState.currentIndex -= 1;
+        renderCurrentQuestion();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+
+    function nextQuestion() {
+      if (!ensureNotRecordingBeforeNavigate()) return;
+      if (appState.currentIndex < INTERVIEW_QUESTIONS.length - 1) {
+        appState.currentIndex += 1;
+        renderCurrentQuestion();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        goToSummary();
+      }
+    }
+
+    function jumpToQuestion(index) {
+      if (!ensureNotRecordingBeforeNavigate()) return;
+      appState.currentIndex = index;
+      closeQuestionDrawer();
+      hideAllScreens();
+      document.getElementById('interviewScreen').classList.remove('hidden');
+      renderCurrentQuestion();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openQuestionDrawer() {
+      if (!ensureNotRecordingBeforeNavigate()) return;
+      const listEl = document.getElementById('drawerQuestionList');
+      listEl.innerHTML = '';
+
+      let currentSection = '';
+      INTERVIEW_QUESTIONS.forEach((q, idx) => {
+        if (q.section !== currentSection) {
+          currentSection = q.section;
+          const secHeader = document.createElement('div');
+          secHeader.className = 'text-xs font-extrabold uppercase tracking-wider text-slate-400 pt-2 first:pt-0';
+          secHeader.textContent = currentSection;
+          listEl.appendChild(secHeader);
+        }
+
+        const ans = appState.answers[idx];
+        const hasAudio = ans && ans.blob;
+        const hasNote = ans && ans.textNote && ans.textNote.trim();
+        const isCurrent = idx === appState.currentIndex && !document.getElementById('interviewScreen').classList.contains('hidden');
+
+        const itemBtn = document.createElement('button');
+        itemBtn.type = 'button';
+        itemBtn.onclick = () => jumpToQuestion(idx);
+        itemBtn.className = `w-full text-left p-3.5 rounded-2xl border transition flex items-start justify-between gap-3 ${
+          isCurrent
+            ? 'bg-brand-50/80 border-brand-500 ring-1 ring-brand-500'
+            : 'bg-white hover:bg-slate-50 border-slate-200'
+        }`;
+
+        let statusBadge = `<span class="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">Belum</span>`;
+        if (hasAudio) {
+          statusBadge = `<span class="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">✓ ${formatDuration(ans.durationSec || 0)}</span>`;
+        } else if (hasNote) {
+          statusBadge = `<span class="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Teks</span>`;
+        }
+
+        itemBtn.innerHTML = `
+          <div class="min-w-0">
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="text-xs font-extrabold text-indigo-600">${q.shortCode}</span>
+            </div>
+            <p class="text-xs sm:text-sm font-medium text-slate-800 line-clamp-2">${q.question}</p>
+          </div>
+          ${statusBadge}
+        `;
+        listEl.appendChild(itemBtn);
+      });
+
+      document.getElementById('questionDrawerModal').classList.remove('hidden');
+    }
+
+    function closeQuestionDrawer() {
+      document.getElementById('questionDrawerModal').classList.add('hidden');
+    }
+
+    // =========================================================
+    // 7. TINJAU JAWABAN SISWA & KIRIM KE CLOUD
+    // =========================================================
+    function goToSummary() {
+      if (!ensureNotRecordingBeforeNavigate()) return;
+
+      hideAllScreens();
+      document.getElementById('summaryScreen').classList.remove('hidden');
+
+      const code = appState.respondentCode;
+      const studentName = appState.studentName || 'Siswa';
+
+      let recordedCount = 0;
+      const summaryContainer = document.getElementById('summaryListContainer');
+      summaryContainer.innerHTML = '';
+
+      INTERVIEW_QUESTIONS.forEach((q, idx) => {
+        const ans = appState.answers[idx];
+        const hasAudio = ans && ans.blob;
+        const hasNote = ans && ans.textNote && ans.textNote.trim();
+        if (hasAudio || hasNote) recordedCount++;
+
+        const card = document.createElement('div');
+        card.className = 'p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-3';
+
+        let bodyHtml = '';
+        if (hasAudio) {
+          bodyHtml += `
+            <div class="bg-white p-2.5 rounded-xl border border-slate-200">
+              <audio controls src="${ans.url}"></audio>
+            </div>
+            <div class="text-xs text-emerald-700 font-semibold flex items-center gap-1.5">
+              <span>✓ Rekaman suara siap dikirim (Durasi ${formatDuration(ans.durationSec || 0)})</span>
+            </div>
+          `;
+        } else {
+          bodyHtml += `
+            <div class="text-xs text-slate-500 italic">
+              Belum ada rekaman suara untuk pertanyaan ini.
+            </div>
+          `;
+        }
+
+        if (hasNote) {
+          bodyHtml += `
+            <div class="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-slate-700">
+              <span class="font-bold text-indigo-900">Catatan teks:</span> ${escapeHtml(ans.textNote)}
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs font-extrabold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">${q.shortCode}</span>
+                <span class="text-[11px] font-medium text-slate-400">${q.section}</span>
+              </div>
+              <p class="text-sm font-bold text-slate-900">${q.question}</p>
+            </div>
+            <button
+              type="button"
+              onclick="jumpToQuestion(${idx})"
+              class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition"
+            >
+              ${hasAudio ? 'Ubah' : 'Isi Sekarang'}
+            </button>
+          </div>
+          ${bodyHtml}
+        `;
+
+        summaryContainer.appendChild(card);
+      });
+
+      document.getElementById('summaryStudentMeta').textContent =
+        `Nama: ${studentName} • Kode Responden: ${code} • Terisi: ${recordedCount} dari ${INTERVIEW_QUESTIONS.length} pertanyaan`;
+
+      refreshLucideIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function backToInterview() {
+      hideAllScreens();
+      document.getElementById('interviewScreen').classList.remove('hidden');
+      renderCurrentQuestion();
+    }
+
+    async function submitInterviewToCloud() {
+      if (!isFirebaseConfigured()) {
+        showToast('Konfigurasi Firebase belum diisi oleh peneliti. Jawaban belum bisa dikirim.', 'error');
+        return;
+      }
+
+      let totalItemsToProcess = 0;
+      INTERVIEW_QUESTIONS.forEach((_, idx) => {
+        const ans = appState.answers[idx];
+        if (ans && (ans.blob || (ans.textNote && ans.textNote.trim()))) {
+          totalItemsToProcess++;
+        }
+      });
+
+      if (totalItemsToProcess === 0) {
+        showToast('Rekam minimal satu jawaban suara terlebih dahulu sebelum mengirim ya.', 'warning');
+        return;
+      }
+
+      const btnSubmit = document.getElementById('btnSubmitToResearcher');
+      const progressBox = document.getElementById('uploadProgressBox');
+      const progressText = document.getElementById('uploadProgressText');
+      const progressPercent = document.getElementById('uploadProgressPercent');
+      const progressBar = document.getElementById('uploadProgressBar');
+
+      btnSubmit.disabled = true;
+      btnSubmit.classList.add('opacity-60', 'pointer-events-none');
+      progressBox.classList.remove('hidden');
+
+      try {
+        const user = await initFirebaseAuth();
+        if (!user || !db) {
+          throw new Error('Koneksi layanan penyimpanan belum siap.');
+        }
+
+        const code = appState.respondentCode;
+        const studentName = appState.studentName;
+        const sessionStamp = appState.sessionTimestamp || createSessionTimestamp();
+        const submissionDocId = `${code}_${sessionStamp}`;
+
+        const answersPayload = [];
+        let processedCount = 0;
+        let audioCount = 0;
+
+        for (let idx = 0; idx < INTERVIEW_QUESTIONS.length; idx++) {
+          const q = INTERVIEW_QUESTIONS[idx];
+          const ans = appState.answers[idx];
+          const hasAudio = ans && ans.blob;
+          const hasNote = ans && ans.textNote && ans.textNote.trim();
+
+          if (!hasAudio && !hasNote) continue;
+
+          processedCount++;
+          const pct = Math.min(92, Math.round((processedCount / totalItemsToProcess) * 90));
+          progressText.textContent = `Mengirim jawaban ${q.shortCode} (${processedCount}/${totalItemsToProcess})...`;
+          progressPercent.textContent = `${pct}%`;
+          progressBar.style.width = `${pct}%`;
+
+          let downloadURL = '';
+          let storagePath = '';
+          let inlineDataUrl = '';
+          const ext = hasAudio ? (ans.ext || 'webm') : '';
+          const fileName = hasAudio ? `${code}_${q.id}.${ext}` : '';
+
+          if (hasAudio) {
+            audioCount++;
+            storagePath = `wawancara_math_anxiety/${code}/${fileName}`;
+            try {
+              if (storage) {
+                const fileRef = storageRef(storage, storagePath);
+                await uploadBytes(fileRef, ans.blob, {
+                  contentType: ans.blob.type || 'audio/webm'
+                });
+                downloadURL = await getDownloadURL(fileRef);
+              } else {
+                throw new Error('Storage tidak tersedia');
+              }
+            } catch (storageErr) {
+              if (ans.blob.size < 700000) {
+                inlineDataUrl = await blobToDataUrl(ans.blob);
+              } else {
+                throw storageErr;
+              }
+            }
+          }
+
+          answersPayload.push({
+            questionId: q.id,
+            shortCode: q.shortCode,
+            section: q.section,
+            questionText: q.question,
+            hasAudio: Boolean(hasAudio),
+            fileName,
+            storagePath,
+            downloadURL,
+            inlineDataUrl,
+            durationSec: hasAudio ? (ans.durationSec || 0) : 0,
+            textNote: hasNote ? ans.textNote.trim() : ''
+          });
+        }
+
+        progressText.textContent = 'Menyimpan catatan akhir wawancara...';
+        progressPercent.textContent = '96%';
+        progressBar.style.width = '96%';
+
+        const submittedAtIso = new Date().toISOString();
+        const submittedAtReadable = new Date().toLocaleString('id-ID', {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        });
+
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions', submissionDocId);
+        await setDoc(docRef, {
+          id: submissionDocId,
+          kode_responden: code,
+          nama_siswa: studentName,
+          waktu_kirim_iso: submittedAtIso,
+          waktu_kirim_label: submittedAtReadable,
+          jumlah_terjawab: answersPayload.length,
+          jumlah_audio: audioCount,
+          jawaban: answersPayload,
+          submittedByUid: user.uid
+        });
+
+        progressPercent.textContent = '100%';
+        progressBar.style.width = '100%';
+
+        setTimeout(() => {
+          hideAllScreens();
+          document.getElementById('headerControls').classList.add('hidden');
+          document.getElementById('headerControls').classList.remove('flex');
+          document.getElementById('submittedCodeChip').textContent = `Kode Responden: ${code}`;
+          document.getElementById('submittedDetailsText').textContent =
+            `Nama: ${studentName} • ${audioCount} rekaman suara terkirim pada ${submittedAtReadable}`;
+          document.getElementById('submittedSuccessScreen').classList.remove('hidden');
+          refreshLucideIcons();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 400);
+
+      } catch (err) {
+        console.error('Gagal mengirim jawaban:', err);
+        showToast('Gagal mengirim jawaban ke server. Periksa koneksi internet dan aturan Firebase lalu coba lagi.', 'error');
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-60', 'pointer-events-none');
+        progressBox.classList.add('hidden');
+      }
+    }
+
+    function resetForNewStudentSession() {
+      Object.values(appState.answers).forEach((ans) => {
+        if (ans && ans.url) URL.revokeObjectURL(ans.url);
+      });
+
+      appState.studentName = '';
+      appState.respondentCode = generateRespondentCode();
+      appState.sessionTimestamp = '';
+      appState.currentIndex = 0;
+      appState.answers = {};
+
+      document.getElementById('studentNameInput').value = '';
+      document.getElementById('autoCodeBadge').textContent = appState.respondentCode;
+      document.getElementById('headerSubtitle').textContent = 'Wawancara Suara Siswa';
+      document.getElementById('micTestResultBox').classList.add('hidden');
+      document.getElementById('uploadProgressBox').classList.add('hidden');
+      const btnSubmit = document.getElementById('btnSubmitToResearcher');
+      btnSubmit.disabled = false;
+      btnSubmit.classList.remove('opacity-60', 'pointer-events-none');
+
+      hideAllScreens();
+      document.getElementById('welcomeScreen').classList.remove('hidden');
+      refreshLucideIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // =========================================================
+    // 8. MODE PENELITI
+    // =========================================================
+    function openResearcherLoginModal() {
+      if (appState.isResearcherAuthenticated) {
+        enterResearcherDashboard();
+        return;
+      }
+      document.getElementById('researcherPinInput').value = '';
+      document.getElementById('pinErrorMsg').classList.add('hidden');
+      document.getElementById('defaultPinHintBox').classList.toggle('hidden', appState.isCustomPinSet);
+      document.getElementById('researcherLoginModal').classList.remove('hidden');
+      refreshLucideIcons();
+      setTimeout(() => document.getElementById('researcherPinInput').focus(), 80);
+    }
+
+    function closeResearcherLoginModal() {
+      document.getElementById('researcherLoginModal').classList.add('hidden');
+    }
+
+    function verifyResearcherPin() {
+      const entered = (document.getElementById('researcherPinInput').value || '').trim();
+      if (entered === appState.activeResearcherPin) {
+        appState.isResearcherAuthenticated = true;
+        closeResearcherLoginModal();
+        enterResearcherDashboard();
+        showToast('Berhasil masuk ke Panel Peneliti.', 'success');
+      } else {
+        document.getElementById('pinErrorMsg').classList.remove('hidden');
+        document.getElementById('researcherPinInput').select();
+      }
+    }
+
+    async function enterResearcherDashboard() {
+      hideAllScreens();
+      document.getElementById('headerControls').classList.add('hidden');
+      document.getElementById('headerControls').classList.remove('flex');
+      document.getElementById('btnOpenResearcherModal').classList.add('hidden');
+      document.getElementById('btnExitResearcherMode').classList.remove('hidden');
+      document.getElementById('btnExitResearcherMode').classList.add('inline-flex');
+      document.getElementById('headerSubtitle').textContent = 'Panel Peneliti • Kelola & Unduh Rekaman';
+
+      document.getElementById('researcherDashboardScreen').classList.remove('hidden');
+      refreshLucideIcons();
+      await subscribeToSubmissions();
+    }
+
+    function exitResearcherMode() {
+      if (submissionsUnsubscribe) {
+        submissionsUnsubscribe();
+        submissionsUnsubscribe = null;
+      }
+      document.getElementById('btnExitResearcherMode').classList.add('hidden');
+      document.getElementById('btnExitResearcherMode').classList.remove('inline-flex');
+      document.getElementById('btnOpenResearcherModal').classList.remove('hidden');
+      document.getElementById('headerSubtitle').textContent = appState.studentName
+        ? `${appState.studentName} • Kode: ${appState.respondentCode}`
+        : 'Wawancara Suara Siswa';
+
+      hideAllScreens();
+      document.getElementById('welcomeScreen').classList.remove('hidden');
+      refreshLucideIcons();
+    }
+
+    async function subscribeToSubmissions() {
+      if (!isFirebaseConfigured()) {
+        document.getElementById('researcherStatsText').textContent = 'Konfigurasi Firebase belum diisi di index.html.';
+        renderResearcherList();
+        return;
+      }
+
+      const user = await initFirebaseAuth();
+      if (!user || !db) {
+        document.getElementById('researcherStatsText').textContent = 'Koneksi database belum aktif.';
+        return;
+      }
+
+      if (submissionsUnsubscribe) submissionsUnsubscribe();
+
+      const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions');
+      submissionsUnsubscribe = onSnapshot(
+        colRef,
+        (snapshot) => {
+          const items = [];
+          snapshot.forEach((docSnap) => {
+            items.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          items.sort((a, b) => (b.waktu_kirim_iso || '').localeCompare(a.waktu_kirim_iso || ''));
+          appState.submissions = items;
+          renderResearcherList();
+        },
+        (error) => {
+          console.error('Error membaca data responden:', error);
+          showToast('Gagal memuat daftar responden dari server.', 'error');
+        }
+      );
+    }
+
+    function renderResearcherList() {
+      const container = document.getElementById('researcherSubmissionsList');
+      const queryStr = (document.getElementById('researcherSearchInput').value || '').trim().toLowerCase();
+
+      const filtered = appState.submissions.filter((item) => {
+        if (!queryStr) return true;
+        const nama = (item.nama_siswa || '').toLowerCase();
+        const kode = (item.kode_responden || '').toLowerCase();
+        return nama.includes(queryStr) || kode.includes(queryStr);
+      });
+
+      document.getElementById('totalSubmissionsBadge').textContent = appState.submissions.length;
+      if (isFirebaseConfigured()) {
+        document.getElementById('researcherStatsText').textContent =
+          appState.submissions.length === 0
+            ? 'Belum ada siswa yang mengirimkan jawaban rekaman.'
+            : `Menampilkan ${filtered.length} dari ${appState.submissions.length} responden yang masuk`;
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-2">
+            <p class="font-display font-bold text-slate-700 text-base">Belum ada data ditemukan</p>
+            <p class="text-xs text-slate-500">Data rekaman siswa yang telah menekan "Kirim Jawaban" akan otomatis muncul di sini.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      filtered.forEach((sub) => {
+        const isExpanded = appState.expandedRespondentId === sub.id;
+        const answers = Array.isArray(sub.jawaban) ? sub.jawaban : [];
+
+        const card = document.createElement('div');
+        card.className = 'rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xs transition';
+
+        let detailHtml = '';
+        if (isExpanded) {
+          const itemsHtml = answers.map((ans) => {
+            const audioSrc = ans.downloadURL || ans.inlineDataUrl || '';
+            return `
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <span class="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">${escapeHtml(ans.shortCode || ans.questionId)}</span>
+                    <p class="text-xs sm:text-sm font-bold text-slate-800 mt-1">${escapeHtml(ans.questionText)}</p>
+                  </div>
+                  ${ans.hasAudio ? `<span class="text-[11px] font-mono text-slate-500 shrink-0">${formatDuration(ans.durationSec || 0)}</span>` : ''}
+                </div>
+                ${
+                  audioSrc
+                    ? `<audio controls preload="none" src="${audioSrc}"></audio>`
+                    : `<p class="text-xs italic text-slate-400">Tidak ada file rekaman suara</p>`
+                }
+                ${
+                  ans.textNote
+                    ? `<div class="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200/70 text-xs text-slate-700"><strong>Catatan siswa:</strong> ${escapeHtml(ans.textNote)}</div>`
+                    : ''
+                }
+              </div>
+            `;
+          }).join('');
+
+          detailHtml = `
+            <div class="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Daftar Rekaman (${answers.length} Pertanyaan Terjawab)</span>
+              </div>
+              <div class="space-y-2.5">
+                ${itemsHtml || '<p class="text-xs text-slate-500">Tidak ada rincian jawaban.</p>'}
+              </div>
+            </div>
+          `;
+        }
+
+        card.innerHTML = `
+          <div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-mono font-extrabold text-xs sm:text-sm px-2.5 py-0.5 rounded-lg bg-brand-50 text-brand-800 border border-brand-200">
+                  ${escapeHtml(sub.kode_responden)}
+                </span>
+                <h3 class="font-display font-bold text-base sm:text-lg text-slate-900 truncate">
+                  ${escapeHtml(sub.nama_siswa)}
+                </h3>
+              </div>
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                <span>Kirim: ${escapeHtml(sub.waktu_kirim_label || '-')}</span>
+                <span>•</span>
+                <span class="font-semibold text-emerald-700">${sub.jumlah_audio || 0} audio</span>
+                <span>•</span>
+                <span>${sub.jumlah_terjawab || answers.length}/14 terjawab</span>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onclick="toggleRespondentDetail('${escapeHtml(sub.id)}')"
+                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+              >
+                <i data-lucide="${isExpanded ? 'chevron-up' : 'headphones'}" class="w-3.5 h-3.5 text-indigo-600"></i>
+                <span>${isExpanded ? 'Tutup Detail' : 'Putar & Detail'}</span>
+              </button>
+
+              <button
+                type="button"
+                onclick="downloadSingleRespondentZip('${escapeHtml(sub.id)}')"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition"
+              >
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Unduh ZIP Siswa Ini</span>
+              </button>
+
+              <button
+                type="button"
+                onclick="promptDeleteSubmission('${escapeHtml(sub.id)}', '${escapeHtml(sub.kode_responden)}', '${escapeHtml(sub.nama_siswa)}')"
+                class="inline-flex items-center justify-center p-2 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition"
+                title="Hapus Data Responden"
+              >
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          ${detailHtml}
+        `;
+
+        container.appendChild(card);
+      });
+
+      refreshLucideIcons();
+    }
+
+    function toggleRespondentDetail(docId) {
+      appState.expandedRespondentId = appState.expandedRespondentId === docId ? null : docId;
+      renderResearcherList();
+    }
+
+    // =========================================================
+    // 9. UNDUH ZIP SATUAN & MASSAL
+    // =========================================================
+    async function fetchAudioBlobFromAnswer(ans) {
+      const src = ans.downloadURL || ans.inlineDataUrl;
+      if (!src) return null;
+      const response = await fetch(src);
+      if (!response.ok) throw new Error('Gagal mengunduh file audio');
+      return await response.blob();
+    }
+
+    function buildSummaryTxtForRespondent(sub) {
+      const code = sub.kode_responden || 'MA-XXXX';
+      const studentName = sub.nama_siswa || 'Tanpa Nama';
+      const answers = Array.isArray(sub.jawaban) ? sub.jawaban : [];
+
+      const lines = [
+        '====================================================',
+        'RINGKASAN HASIL WAWANCARA SUARA - MATHEMATICS ANXIETY',
+        '====================================================',
+        `Kode Responden    : ${code}`,
+        `Nama Siswa        : ${studentName}`,
+        `Waktu Kirim       : ${sub.waktu_kirim_label || '-'}`,
+        '====================================================',
+        ''
+      ];
+
+      INTERVIEW_QUESTIONS.forEach((q) => {
+        const found = answers.find((a) => a.questionId === q.id);
+        lines.push(`[${q.shortCode}] (${q.section})`);
+        lines.push(`Pertanyaan: ${q.question}`);
+        if (found && found.hasAudio) {
+          lines.push(`Status Audio: Terjawab (${found.fileName} | Durasi ${formatDuration(found.durationSec || 0)})`);
+        } else {
+          lines.push('Status Audio: Tidak ada rekaman suara');
+        }
+        if (found && found.textNote) {
+          lines.push(`Catatan Teks: ${found.textNote}`);
+        }
+        lines.push('----------------------------------------------------');
+      });
+
+      return lines.join('\n');
+    }
+
+    async function downloadSingleRespondentZip(docId) {
+      const sub = appState.submissions.find((s) => s.id === docId);
+      if (!sub) return;
+
+      showToast(`Menyiapkan ZIP untuk ${sub.kode_responden}...`, 'info');
+
+      try {
+        const zip = new JSZip();
+        const code = sub.kode_responden || 'MA-XXXX';
+        const answers = Array.isArray(sub.jawaban) ? sub.jawaban : [];
+
+        for (const ans of answers) {
+          if (ans.hasAudio) {
+            try {
+              const blob = await fetchAudioBlobFromAnswer(ans);
+              if (blob) {
+                const fname = ans.fileName || `${code}_${ans.questionId}.webm`;
+                zip.file(fname, blob);
+              }
+            } catch (e) {
+              console.warn('Gagal mengambil satu file audio:', ans.fileName, e);
+            }
+          }
+        }
+
+        zip.file(`Ringkasan_Jawaban_${code}.txt`, buildSummaryTxtForRespondent(sub));
+
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Wawancara_${code}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+
+        showToast(`Berhasil mengunduh Wawancara_${code}.zip`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal membuat file ZIP responden ini.', 'error');
+      }
+    }
+
+    async function downloadAllRespondentsZip() {
+      if (appState.submissions.length === 0) {
+        showToast('Belum ada data responden untuk diunduh.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('btnDownloadAllRespondentsZip');
+      const origHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span>Mengemas ${appState.submissions.length} Responden...</span>`;
+
+      try {
+        const masterZip = new JSZip();
+        const masterKeyLines = [
+          '====================================================',
+          'DAFTAR PEMETAAN KODE RESPONDEN & NAMA SISWA',
+          'PENELITIAN MATHEMATICS ANXIETY',
+          '====================================================',
+          ''
+        ];
+
+        for (const sub of appState.submissions) {
+          const code = sub.kode_responden || 'MA-XXXX';
+          const folder = masterZip.folder(code);
+          const answers = Array.isArray(sub.jawaban) ? sub.jawaban : [];
+
+          masterKeyLines.push(`${code} | Nama: ${sub.nama_siswa} | Waktu: ${sub.waktu_kirim_label || '-'} | Audio: ${sub.jumlah_audio || 0}`);
+
+          for (const ans of answers) {
+            if (ans.hasAudio) {
+              try {
+                const blob = await fetchAudioBlobFromAnswer(ans);
+                if (blob) {
+                  const fname = ans.fileName || `${code}_${ans.questionId}.webm`;
+                  folder.file(fname, blob);
+                }
+              } catch (e) {
+                console.warn('Skip audio gagal unduh:', ans.fileName);
+              }
+            }
+          }
+
+          folder.file(`Ringkasan_Jawaban_${code}.txt`, buildSummaryTxtForRespondent(sub));
+        }
+
+        masterZip.file('DAFTAR_KODE_DAN_NAMA_SISWA.txt', masterKeyLines.join('\n'));
+
+        const zipBlob = await masterZip.generateAsync({ type: 'blob' });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Semua_Wawancara_MathAnxiety_${createSessionTimestamp()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+
+        showToast('Seluruh data responden berhasil diunduh dalam satu arsip ZIP!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Terjadi kendala saat mengemas seluruh data ZIP.', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        refreshLucideIcons();
+      }
+    }
+
+    // =========================================================
+    // 10. GANTI PIN & HAPUS DATA RESPONDEN
+    // =========================================================
+    function openChangePinModal() {
+      document.getElementById('newPinInput').value = '';
+      document.getElementById('changePinModal').classList.remove('hidden');
+    }
+
+    function closeChangePinModal() {
+      document.getElementById('changePinModal').classList.add('hidden');
+    }
+
+    async function saveNewResearcherPin() {
+      const newPin = (document.getElementById('newPinInput').value || '').trim();
+      if (newPin.length < 4) {
+        showToast('PIN baru minimal 4 karakter.', 'warning');
+        return;
+      }
+
+      try {
+        const user = await initFirebaseAuth();
+        if (user && db) {
+          const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'researcher_settings', 'config');
+          await setDoc(settingsRef, { pin: newPin, updatedAt: new Date().toISOString() }, { merge: true });
+        }
+        appState.activeResearcherPin = newPin;
+        appState.isCustomPinSet = true;
+        closeChangePinModal();
+        showToast('PIN Peneliti berhasil diperbarui!', 'success');
+      } catch (err) {
+        showToast('Gagal menyimpan PIN baru.', 'error');
+      }
+    }
+
+    function promptDeleteSubmission(docId, code, name) {
+      appState.pendingDeleteDocId = docId;
+      document.getElementById('deleteConfirmText').textContent =
+        `Apakah Anda yakin ingin menghapus permanen data dan rekaman milik ${name} (${code})? Tindakan ini tidak dapat dibatalkan.`;
+      document.getElementById('deleteConfirmModal').classList.remove('hidden');
+    }
+
+    function closeDeleteConfirmModal() {
+      appState.pendingDeleteDocId = null;
+      document.getElementById('deleteConfirmModal').classList.add('hidden');
+    }
+
+    async function executeDeleteSubmission() {
+      const docId = appState.pendingDeleteDocId;
+      if (!docId) return;
+
+      const sub = appState.submissions.find((s) => s.id === docId);
+      closeDeleteConfirmModal();
+
+      try {
+        const user = await initFirebaseAuth();
+        if (!user || !db) return;
+
+        if (sub && Array.isArray(sub.jawaban) && storage) {
+          for (const ans of sub.jawaban) {
+            if (ans.storagePath) {
+              try {
+                await deleteObject(storageRef(storage, ans.storagePath));
+              } catch (e) {}
+            }
+          }
+        }
+
+        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions', docId));
+        showToast('Data responden berhasil dihapus.', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal menghapus data responden.', 'error');
+      }
+    }
+
+    Object.assign(window, {
+      regenerateRespondentCode,
+      handleStudentNameInput,
+      runMicTest,
+      startInterview,
+      startRecording,
+      stopRecording,
+      deleteCurrentRecording,
+      toggleFallbackPanel,
+      handleAudioUpload,
+      saveCurrentTextNote,
+      prevQuestion,
+      nextQuestion,
+      jumpToQuestion,
+      openQuestionDrawer,
+      closeQuestionDrawer,
+      goToSummary,
+      backToInterview,
+      submitInterviewToCloud,
+      resetForNewStudentSession,
+      openResearcherLoginModal,
+      closeResearcherLoginModal,
+      verifyResearcherPin,
+      exitResearcherMode,
+      renderResearcherList,
+      toggleRespondentDetail,
+      downloadSingleRespondentZip,
+      downloadAllRespondentsZip,
+      openChangePinModal,
+      closeChangePinModal,
+      saveNewResearcherPin,
+      promptDeleteSubmission,
+      closeDeleteConfirmModal,
+      executeDeleteSubmission
+    });
+  </script>
+</body>
+</html>
