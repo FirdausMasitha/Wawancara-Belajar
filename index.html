@@ -966,13 +966,39 @@
       return await Promise.race([uploadPromise, timeoutPromise]);
     }
 
+    async function setDocWithRetry(docRef, data, maxAttempts = 3) {
+      let lastErr;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          await setDoc(docRef, data);
+          return;
+        } catch (err) {
+          lastErr = err;
+          if (attempt < maxAttempts) {
+            await new Promise((r) => setTimeout(r, 600 * attempt));
+          }
+        }
+      }
+      throw lastErr;
+    }
+
+    function resolveExtFromMime(mimeType, fallbackExt = 'webm') {
+      const m = (mimeType || '').toLowerCase();
+      if (m.includes('mp4') || m.includes('m4a') || m.includes('aac')) return 'm4a';
+      if (m.includes('ogg')) return 'ogg';
+      if (m.includes('wav')) return 'wav';
+      if (m.includes('mpeg') || m.includes('mp3')) return 'mp3';
+      if (m.includes('webm')) return 'webm';
+      return fallbackExt || 'webm';
+    }
+
     async function saveAudioFallbackChunks(submissionDocId, questionId, dataUrl) {
       const CHUNK_SIZE = 600000;
       const chunkIds = [];
       for (let offset = 0, partIdx = 0; offset < dataUrl.length; offset += CHUNK_SIZE, partIdx++) {
         const chunkId = `${submissionDocId}__audio__${questionId}__${partIdx}`;
         const chunkRef = doc(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions', chunkId);
-        await setDoc(chunkRef, {
+        await setDocWithRetry(chunkRef, {
           isAudioPart: true,
           parentId: submissionDocId,
           questionId,
@@ -1605,8 +1631,8 @@
         let recorder;
         try {
           const recOpts = mime
-            ? { mimeType: mime, audioBitsPerSecond: 24000 }
-            : { audioBitsPerSecond: 24000 };
+            ? { mimeType: mime, audioBitsPerSecond: 48000 }
+            : { audioBitsPerSecond: 48000 };
           recorder = new MediaRecorder(stream, recOpts);
         } catch (optErr) {
           recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
@@ -1637,7 +1663,15 @@
           appState.isRecording = false;
 
           const finalDuration = Math.max(1, appState.recordingSeconds);
-          const blob = new Blob(localChunks, { type: recorder.mimeType || 'audio/webm' });
+          const actualMime = recorder.mimeType || mime || 'audio/webm';
+          const resolvedExt = resolveExtFromMime(actualMime, ext);
+          const blob = new Blob(localChunks, { type: actualMime });
+
+          if (!blob || blob.size === 0) {
+            renderCurrentQuestion();
+            showToast('Rekaman suara kosong (0 byte). Coba rekam ulang dan pastikan mikrofon aktif.', 'warning');
+            return;
+          }
 
           if (appState.answers[targetIndex] && appState.answers[targetIndex].url) {
             URL.revokeObjectURL(appState.answers[targetIndex].url);
@@ -1650,9 +1684,10 @@
             blob,
             url: audioUrl,
             durationSec: finalDuration,
-            ext,
+            ext: resolvedExt,
             textNote: prevText,
-            source: 'rekaman'
+            source: 'rekaman',
+            uploadedChunkIds: null
           };
 
           renderCurrentQuestion();
@@ -1664,7 +1699,7 @@
         document.getElementById('recorderActiveState').classList.remove('hidden');
         document.getElementById('recordingTimer').textContent = '00:00';
 
-        recorder.start(250);
+        recorder.start(1000);
 
         appState.timerInterval = setInterval(() => {
           appState.recordingSeconds += 1;
@@ -2053,8 +2088,13 @@
 
             if (!downloadURL) {
               storagePath = '';
-              const dataUrl = await blobToDataUrl(ans.blob);
-              audioChunkIds = await saveAudioFallbackChunks(submissionDocId, q.id, dataUrl);
+              if (Array.isArray(ans.uploadedChunkIds) && ans.uploadedChunkIds.length > 0) {
+                audioChunkIds = ans.uploadedChunkIds;
+              } else {
+                const dataUrl = await blobToDataUrl(ans.blob);
+                audioChunkIds = await saveAudioFallbackChunks(submissionDocId, q.id, dataUrl);
+                ans.uploadedChunkIds = audioChunkIds;
+              }
             }
           }
 
@@ -2085,7 +2125,7 @@
         });
 
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions', submissionDocId);
-        await setDoc(docRef, {
+        await setDocWithRetry(docRef, {
           id: submissionDocId,
           kode_responden: code,
           nama_siswa: studentName,
@@ -2957,6 +2997,15 @@
       promptDeleteSubmission,
       closeDeleteConfirmModal,
       executeDeleteSubmission
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+      const successVisible = !document.getElementById('submittedSuccessScreen').classList.contains('hidden');
+      const hasUnsaved = Object.keys(appState.answers || {}).length > 0;
+      if (!successVisible && (appState.isRecording || hasUnsaved)) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
     });
   </script>
 </body>
