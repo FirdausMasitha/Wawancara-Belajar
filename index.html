@@ -166,18 +166,25 @@
         <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight mb-3">
           Hai! Yuk ceritakan pengalamanmu saat belajar matematika 👋
         </h2>
-        <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
-          Santai saja, tidak ada jawaban benar atau salah dan kamu tidak perlu mengetik panjang. Di setiap pertanyaan, cukup tekan tombol <strong class="text-slate-800">Mulai Rekam Jawaban</strong> lalu ceritakan pengalamanmu seperti sedang mengobrol biasa. Setelah selesai semua, tinggal tekan <strong class="text-slate-800">Kirim Jawaban</strong>.
+        <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-5">
+          Santai saja, tidak ada jawaban benar atau salah. <strong class="text-slate-800">Utamanya, ceritakan pengalamanmu lewat rekaman suara langsung</strong>—cukup tekan tombol <strong class="text-slate-800">Mulai Rekam Jawaban</strong> lalu bicaralah seperti sedang mengobrol biasa. Setelah selesai semua, tinggal tekan <strong class="text-slate-800">Kirim Jawaban</strong>.
         </p>
+
+        <div class="p-3.5 sm:p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 text-xs sm:text-sm text-amber-950 mb-6 flex items-start gap-2.5">
+          <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
+          <p class="leading-relaxed">
+            <strong>Ada kendala mikrofon?</strong> Kamu tetap bisa menjawab dengan cara <strong>mengunggah file audio</strong> (rekaman dari HP) atau <strong>menulis jawaban teks</strong> melalui menu <em>Opsi Tambahan</em> di bawah setiap pertanyaan.
+          </p>
+        </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-7">
           <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-            <div class="text-indigo-600 font-bold text-sm mb-1">1. Tekan & Cerita</div>
+            <div class="text-indigo-600 font-bold text-sm mb-1">1. Utama: Rekam Suara</div>
             <p class="text-xs text-slate-600 leading-relaxed">Rekam jawaban suara di setiap pertanyaan (total 14 pertanyaan singkat).</p>
           </div>
           <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
-            <div class="text-brand-600 font-bold text-sm mb-1">2. Bisa Diulang</div>
-            <p class="text-xs text-slate-600 leading-relaxed">Kamu bisa memutar ulang rekamanmu atau merekam ulang kapan saja.</p>
+            <div class="text-brand-600 font-bold text-sm mb-1">2. Bisa Diulang & Cadangan</div>
+            <p class="text-xs text-slate-600 leading-relaxed">Bisa rekam ulang kapan saja, atau unggah file audio & tulis catatan teks bila perlu.</p>
           </div>
           <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
             <div class="text-emerald-600 font-bold text-sm mb-1">3. Langsung Terkirim</div>
@@ -588,6 +595,16 @@
           <div class="flex flex-wrap items-center gap-2.5">
             <button
               type="button"
+              onclick="openTranscriptKeyModal()"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold text-xs sm:text-sm transition"
+              title="Atur Gemini API Key untuk fitur transkrip suara otomatis"
+            >
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-600"></i>
+              <span>API Transkrip</span>
+            </button>
+
+            <button
+              type="button"
               onclick="openChangePinModal()"
               class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs sm:text-sm transition"
             >
@@ -738,6 +755,38 @@
         </button>
         <button type="button" onclick="saveNewResearcherPin()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm">
           Simpan PIN Baru
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PENGATURAN GEMINI API KEY (KHUSUS PERANGKAT PENELITI) -->
+  <div id="transcriptKeyModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-200 space-y-4 fade-in">
+      <div class="flex items-center justify-between">
+        <h3 class="font-display font-bold text-lg text-slate-900">Pengaturan Transkrip Otomatis</h3>
+        <button type="button" onclick="closeTranscriptKeyModal()" class="p-1.5 rounded-xl text-slate-400 hover:bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        Untuk mentranskrip rekaman suara siswa ke tulisan secara otomatis, masukkan <strong>Gemini API Key</strong> gratis dari Google AI Studio. Key hanya tersimpan di browser Anda sendiri (tidak dibagikan ke siswa).
+      </p>
+      <div>
+        <label for="geminiApiKeyInput" class="block text-xs font-bold text-slate-700 mb-1.5">Gemini API Key</label>
+        <input
+          type="password"
+          id="geminiApiKeyInput"
+          placeholder="AIzaSy..."
+          class="w-full px-4 py-3 rounded-xl border border-slate-300 font-mono text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeTranscriptKeyModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100">
+          Batal
+        </button>
+        <button type="button" onclick="saveTranscriptApiKey()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm">
+          Simpan API Key
         </button>
       </div>
     </div>
@@ -2083,25 +2132,61 @@
         if (isExpanded) {
           const itemsHtml = answers.map((ans) => {
             const audioSrc = resolveAudioSource(ans);
+            const qId = ans.questionId || '';
+            const hasTranscript = Boolean(ans.transcript && ans.transcript.trim());
+            const textareaId = `transcript_${sub.id}_${qId}`;
             return `
-              <div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2">
+              <div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2.5">
                 <div class="flex items-start justify-between gap-2">
                   <div>
-                    <span class="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">${escapeHtml(ans.shortCode || ans.questionId)}</span>
+                    <span class="text-xs font-extrabold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">${escapeHtml(ans.shortCode || qId)}</span>
                     <p class="text-xs sm:text-sm font-bold text-slate-800 mt-1">${escapeHtml(ans.questionText)}</p>
                   </div>
                   ${ans.hasAudio ? `<span class="text-[11px] font-mono text-slate-500 shrink-0">${formatDuration(ans.durationSec || 0)}</span>` : ''}
                 </div>
                 ${
                   audioSrc
-                    ? `<audio controls preload="none" src="${audioSrc}"></audio>`
+                    ? `
+                      <audio controls preload="none" src="${audioSrc}"></audio>
+                      <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onclick="transcribeAudioAnswer('${escapeHtml(sub.id)}', '${escapeHtml(qId)}', this)"
+                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition"
+                        >
+                          <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                          <span>${hasTranscript ? 'Transkrip Ulang ke Teks' : 'Transkrip ke Teks'}</span>
+                        </button>
+                      </div>
+                    `
                     : `<p class="text-xs italic text-slate-400">Tidak ada file rekaman suara</p>`
                 }
                 ${
                   ans.textNote
-                    ? `<div class="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200/70 text-xs text-slate-700"><strong>Catatan siswa:</strong> ${escapeHtml(ans.textNote)}</div>`
+                    ? `<div class="p-2.5 rounded-lg bg-amber-50/80 border border-amber-200/70 text-xs text-slate-700"><strong>Catatan teks siswa:</strong> ${escapeHtml(ans.textNote)}</div>`
                     : ''
                 }
+                <div class="space-y-1.5 pt-1">
+                  <label for="${escapeHtml(textareaId)}" class="block text-[11px] font-bold text-slate-500">
+                    Hasil Transkrip Peneliti (bisa diedit & disimpan):
+                  </label>
+                  <textarea
+                    id="${escapeHtml(textareaId)}"
+                    rows="2"
+                    placeholder="Hasil transkrip akan muncul di sini atau ketik manual..."
+                    class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >${escapeHtml(ans.transcript || '')}</textarea>
+                  <div class="flex justify-end">
+                    <button
+                      type="button"
+                      onclick="saveManualTranscript('${escapeHtml(sub.id)}', '${escapeHtml(qId)}', '${escapeHtml(textareaId)}')"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                    >
+                      <i data-lucide="save" class="w-3 h-3"></i>
+                      <span>Simpan Transkrip</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             `;
           }).join('');
@@ -2219,6 +2304,9 @@
         }
         if (found && found.textNote) {
           lines.push(`Catatan Teks: ${found.textNote}`);
+        }
+        if (found && found.transcript) {
+          lines.push(`Transkrip Audio: ${found.transcript}`);
         }
         lines.push('----------------------------------------------------');
       });
@@ -2339,7 +2427,146 @@
     }
 
     // =========================================================
-    // 10. GANTI PIN & HAPUS DATA RESPONDEN
+    // 10. TRANSKRIP SUARA KE TULISAN (MODE PENELITI)
+    // =========================================================
+    const GEMINI_KEY_STORAGE = 'wawancara_researcher_gemini_key';
+
+    function openTranscriptKeyModal() {
+      const saved = localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+      document.getElementById('geminiApiKeyInput').value = saved;
+      document.getElementById('transcriptKeyModal').classList.remove('hidden');
+    }
+
+    function closeTranscriptKeyModal() {
+      document.getElementById('transcriptKeyModal').classList.add('hidden');
+    }
+
+    function saveTranscriptApiKey() {
+      const val = (document.getElementById('geminiApiKeyInput').value || '').trim();
+      if (val) {
+        localStorage.setItem(GEMINI_KEY_STORAGE, val);
+        showToast('Gemini API Key tersimpan di browser Anda.', 'success');
+      } else {
+        localStorage.removeItem(GEMINI_KEY_STORAGE);
+        showToast('API Key dihapus dari browser.', 'info');
+      }
+      closeTranscriptKeyModal();
+    }
+
+    async function saveTranscriptToFirestore(subId, questionId, transcriptText) {
+      const sub = appState.submissions.find((s) => s.id === subId);
+      if (!sub || !Array.isArray(sub.jawaban)) return;
+
+      const updatedAnswers = sub.jawaban.map((ans) =>
+        ans.questionId === questionId ? { ...ans, transcript: transcriptText } : ans
+      );
+
+      const user = await initFirebaseAuth();
+      if (!user || !db) throw new Error('Database belum siap');
+
+      const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions', subId);
+      await setDoc(docRef, { jawaban: updatedAnswers }, { merge: true });
+    }
+
+    async function saveManualTranscript(subId, questionId, textareaId) {
+      const el = document.getElementById(textareaId);
+      if (!el) return;
+      try {
+        await saveTranscriptToFirestore(subId, questionId, el.value.trim());
+        showToast('Transkrip berhasil disimpan!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Gagal menyimpan transkrip.', 'error');
+      }
+    }
+
+    async function transcribeAudioAnswer(subId, questionId, btnEl) {
+      const apiKey = (localStorage.getItem(GEMINI_KEY_STORAGE) || '').trim();
+      if (!apiKey) {
+        showToast('Masukkan Gemini API Key Anda terlebih dahulu untuk transkrip otomatis.', 'warning');
+        openTranscriptKeyModal();
+        return;
+      }
+
+      const sub = appState.submissions.find((s) => s.id === subId);
+      if (!sub || !Array.isArray(sub.jawaban)) return;
+      const ans = sub.jawaban.find((a) => a.questionId === questionId);
+      if (!ans) return;
+
+      const origHtml = btnEl ? btnEl.innerHTML : '';
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.innerHTML = `<span>Mentranskrip...</span>`;
+      }
+
+      try {
+        const blob = await fetchAudioBlobFromAnswer(ans);
+        if (!blob) throw new Error('File audio tidak ditemukan');
+
+        const dataUrl = await blobToDataUrl(blob);
+        const commaIdx = dataUrl.indexOf(',');
+        const headerPart = commaIdx > -1 ? dataUrl.slice(0, commaIdx) : '';
+        const base64Data = commaIdx > -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+        const mimeMatch = headerPart.match(/data:([^;]+)/);
+        const mimeType = (mimeMatch && mimeMatch[1]) || blob.type || 'audio/webm';
+
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                {
+                  text: 'Transkripsikan rekaman suara wawancara siswa berbahasa Indonesia ini menjadi teks yang akurat dan apa adanya (verbatim). Tulis hanya hasil transkripsinya saja tanpa komentar atau pembuka tambahan.'
+                },
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: base64Data
+                  }
+                }
+              ]
+            }]
+          })
+        });
+
+        if (!response.ok) {
+          const errJson = await response.json().catch(() => ({}));
+          throw new Error((errJson.error && errJson.error.message) || `HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        const transcript = (
+          result.candidates &&
+          result.candidates[0] &&
+          result.candidates[0].content &&
+          result.candidates[0].content.parts &&
+          result.candidates[0].content.parts.map((p) => p.text || '').join('')
+        ) || '';
+
+        const cleaned = transcript.trim();
+        if (!cleaned) throw new Error('Hasil transkrip kosong');
+
+        const textareaEl = document.getElementById(`transcript_${subId}_${questionId}`);
+        if (textareaEl) textareaEl.value = cleaned;
+
+        await saveTranscriptToFirestore(subId, questionId, cleaned);
+        showToast('Transkrip suara selesai & tersimpan!', 'success');
+      } catch (err) {
+        console.error('Gagal transkrip:', err);
+        showToast(`Gagal mentranskrip: ${err.message}`, 'error');
+      } finally {
+        if (btnEl) {
+          btnEl.disabled = false;
+          btnEl.innerHTML = origHtml;
+          refreshLucideIcons();
+        }
+      }
+    }
+
+    // =========================================================
+    // 11. GANTI PIN & HAPUS DATA RESPONDEN
     // =========================================================
     function openChangePinModal() {
       document.getElementById('newPinInput').value = '';
@@ -2456,6 +2683,11 @@
       openChangePinModal,
       closeChangePinModal,
       saveNewResearcherPin,
+      openTranscriptKeyModal,
+      closeTranscriptKeyModal,
+      saveTranscriptApiKey,
+      saveManualTranscript,
+      transcribeAudioAnswer,
       promptDeleteSubmission,
       closeDeleteConfirmModal,
       executeDeleteSubmission
