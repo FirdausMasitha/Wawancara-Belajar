@@ -1121,6 +1121,7 @@
       currentIndex: 0,
       answers: {},
       isRecording: false,
+      isStartingRecording: false,
       mediaRecorder: null,
       audioChunks: [],
       activeStream: null,
@@ -1560,23 +1561,44 @@
     // 6. PEREKAMAN SUARA (MediaRecorder API)
     // =========================================================
     async function startRecording() {
-      if (appState.isRecording) return;
+      if (appState.isRecording || appState.isStartingRecording) return;
+      appState.isStartingRecording = true;
 
       const micErrorBox = document.getElementById('micErrorBox');
       const micErrorMessage = document.getElementById('micErrorMessage');
       micErrorBox.classList.add('hidden');
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        appState.isStartingRecording = false;
         micErrorMessage.textContent = 'Browser yang kamu pakai belum mendukung perekaman suara langsung. Silakan gunakan tombol "Pilih File Audio dari Perangkat" di bagian Opsi Tambahan.';
         micErrorBox.classList.remove('hidden');
         document.getElementById('fallbackPanel').classList.remove('hidden');
         return;
       }
 
+      let stream = null;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // Pastikan tidak ada rekaman/stream/timer lama yang masih tertinggal
+        if (appState.mediaRecorder && appState.mediaRecorder.state === 'recording') {
+          try {
+            appState.mediaRecorder.onstop = null;
+            appState.mediaRecorder.ondataavailable = null;
+            appState.mediaRecorder.stop();
+          } catch (e) {}
+        }
+        if (appState.activeStream) {
+          appState.activeStream.getTracks().forEach((track) => track.stop());
+        }
+        if (appState.timerInterval) {
+          clearInterval(appState.timerInterval);
+          appState.timerInterval = null;
+        }
+
         appState.activeStream = stream;
-        appState.audioChunks = [];
+        const localChunks = [];
+        appState.audioChunks = localChunks;
         appState.recordingSeconds = 0;
 
         const { mime, ext } = getSupportedAudioMime();
@@ -1591,24 +1613,31 @@
         }
         appState.mediaRecorder = recorder;
         appState.isRecording = true;
+        appState.isStartingRecording = false;
 
         const targetIndex = appState.currentIndex;
 
         recorder.ondataavailable = (event) => {
-          if (event.data && event.data.size > 0) appState.audioChunks.push(event.data);
+          if (event.data && event.data.size > 0) localChunks.push(event.data);
         };
 
         recorder.onstop = () => {
-          if (appState.activeStream) {
-            appState.activeStream.getTracks().forEach((track) => track.stop());
+          stream.getTracks().forEach((track) => track.stop());
+          if (appState.activeStream === stream) {
             appState.activeStream = null;
           }
+          if (appState.mediaRecorder === recorder) {
+            appState.mediaRecorder = null;
+          }
 
-          clearInterval(appState.timerInterval);
+          if (appState.timerInterval) {
+            clearInterval(appState.timerInterval);
+            appState.timerInterval = null;
+          }
           appState.isRecording = false;
 
           const finalDuration = Math.max(1, appState.recordingSeconds);
-          const blob = new Blob(appState.audioChunks, { type: recorder.mimeType || 'audio/webm' });
+          const blob = new Blob(localChunks, { type: recorder.mimeType || 'audio/webm' });
 
           if (appState.answers[targetIndex] && appState.answers[targetIndex].url) {
             URL.revokeObjectURL(appState.answers[targetIndex].url);
@@ -1642,6 +1671,10 @@
           document.getElementById('recordingTimer').textContent = formatDuration(appState.recordingSeconds);
         }, 1000);
       } catch (err) {
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+        appState.isStartingRecording = false;
         appState.isRecording = false;
         micErrorMessage.innerHTML = 'Akses mikrofon tidak diizinkan atau diblokir oleh browser. Klik ikon <strong>Gembok / Mikrofon</strong> di bilah alamat browser untuk mengizinkan, atau buka <strong>Opsi Tambahan</strong> di bawah untuk mengunggah rekaman suara dari HP.';
         micErrorBox.classList.remove('hidden');
@@ -1724,7 +1757,7 @@
     }
 
     function ensureNotRecordingBeforeNavigate() {
-      if (appState.isRecording) {
+      if (appState.isRecording || appState.isStartingRecording) {
         showToast('Hentikan rekaman terlebih dahulu sebelum berpindah pertanyaan.', 'warning');
         return false;
       }
