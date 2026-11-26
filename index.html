@@ -211,17 +211,17 @@
                   <div class="flex items-center gap-2 min-w-0">
                     <span class="w-2 h-2 rounded-full bg-brand-500 shrink-0"></span>
                     <span id="autoCodeBadge" class="font-mono font-extrabold text-sm sm:text-base text-brand-900 tracking-wider truncate">
-                      MA-0000
+                      S01
                     </span>
                   </div>
                   <button
                     type="button"
                     onclick="regenerateRespondentCode()"
-                    title="Buat ulang kode acak baru"
+                    title="Periksa nomor urut responden terbaru"
                     class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white hover:bg-brand-100 text-brand-700 text-xs font-semibold border border-brand-200 shadow-2xs transition active:scale-95 shrink-0"
                   >
                     <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                    <span>Acak</span>
+                    <span>Segarkan</span>
                   </button>
                 </div>
               </div>
@@ -541,7 +541,7 @@
 
         <div class="space-y-2.5">
           <span id="submittedCodeChip" class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-brand-50 text-brand-800 font-mono text-xs font-bold border border-brand-200">
-            Kode Responden: MA-0000
+            Kode Responden: S01
           </span>
           <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">
             Terima kasih! Jawaban rekamanmu sudah berhasil terkirim ke peneliti.
@@ -614,7 +614,7 @@
               type="text"
               id="researcherSearchInput"
               oninput="renderResearcherList()"
-              placeholder="Cari berdasarkan nama siswa atau kode responden (misal: MA-4821)..."
+              placeholder="Cari berdasarkan nama siswa atau kode responden (misal: S01)..."
               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
             />
           </div>
@@ -791,7 +791,8 @@
       setDoc,
       deleteDoc,
       collection,
-      onSnapshot
+      onSnapshot,
+      runTransaction
     } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
     import {
       getStorage,
@@ -1023,16 +1024,56 @@
       return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
 
-    function generateRespondentCode() {
-      const randomFourDigits = Math.floor(1000 + Math.random() * 9000);
-      return `MA-${randomFourDigits}`;
+    function formatRespondentCode(num) {
+      return `S${String(num).padStart(2, '0')}`;
     }
 
-    function regenerateRespondentCode() {
-      appState.respondentCode = generateRespondentCode();
+    function generateRespondentCode() {
+      return formatRespondentCode(1);
+    }
+
+    async function fetchPreviewRespondentCode() {
+      if (!isFirebaseConfigured()) return formatRespondentCode(1);
+      const user = await initFirebaseAuth();
+      if (!user || !db) return formatRespondentCode(1);
+      try {
+        const counterRef = doc(db, 'artifacts', appId, 'public', 'data', 'researcher_settings', 'counter');
+        const snap = await getDoc(counterRef);
+        const lastNumber = snap.exists() && typeof snap.data().lastNumber === 'number'
+          ? snap.data().lastNumber
+          : 0;
+        return formatRespondentCode(lastNumber + 1);
+      } catch (err) {
+        console.warn('Gagal membaca nomor urut responden:', err);
+        return formatRespondentCode(1);
+      }
+    }
+
+    async function claimNextRespondentCode() {
+      const counterRef = doc(db, 'artifacts', appId, 'public', 'data', 'researcher_settings', 'counter');
+      const nextNum = await runTransaction(db, async (transaction) => {
+        const snap = await transaction.get(counterRef);
+        const currentNum = snap.exists() && typeof snap.data().lastNumber === 'number'
+          ? snap.data().lastNumber
+          : 0;
+        const updatedNum = currentNum + 1;
+        transaction.set(counterRef, {
+          lastNumber: updatedNum,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        return updatedNum;
+      });
+      return formatRespondentCode(nextNum);
+    }
+
+    async function regenerateRespondentCode(silent = false) {
+      const nextCode = await fetchPreviewRespondentCode();
+      appState.respondentCode = nextCode;
       const badge = document.getElementById('autoCodeBadge');
       if (badge) badge.textContent = appState.respondentCode;
-      showToast(`Kode responden diperbarui menjadi ${appState.respondentCode}`, 'info');
+      if (!silent) {
+        showToast(`Nomor urut responden terbaru: ${appState.respondentCode}`, 'info');
+      }
     }
 
     function handleStudentNameInput(val) {
@@ -1109,6 +1150,7 @@
       }
       refreshLucideIcons();
       await loadResearcherSettings();
+      await regenerateRespondentCode(true);
     });
 
     // =========================================================
@@ -1664,7 +1706,11 @@
           throw new Error('Koneksi layanan penyimpanan belum siap.');
         }
 
-        const code = appState.respondentCode;
+        progressText.textContent = 'Menetapkan nomor urut responden...';
+        const code = await claimNextRespondentCode();
+        appState.respondentCode = code;
+        document.getElementById('headerSubtitle').textContent = `${appState.studentName} • Kode: ${code}`;
+
         const studentName = appState.studentName;
         const sessionStamp = appState.sessionTimestamp || createSessionTimestamp();
         const submissionDocId = `${code}_${sessionStamp}`;
@@ -1800,6 +1846,7 @@
       hideAllScreens();
       document.getElementById('welcomeScreen').classList.remove('hidden');
       refreshLucideIcons();
+      regenerateRespondentCode(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
