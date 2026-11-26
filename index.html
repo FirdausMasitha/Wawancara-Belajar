@@ -88,7 +88,7 @@
         </div>
         <div class="truncate">
           <h1 class="font-display font-bold text-sm sm:text-base text-slate-900 truncate">Cerita Belajar Matematika</h1>
-          <p id="headerSubtitle" class="text-xs text-slate-500 truncate">Wawancara Suara Siswa</p>
+          <p id="headerSubtitle" class="text-xs text-slate-500 truncate hidden"></p>
         </div>
       </div>
 
@@ -1445,7 +1445,9 @@
       if (!appState.respondentCode) appState.respondentCode = generateRespondentCode();
       if (!appState.sessionTimestamp) appState.sessionTimestamp = createSessionTimestamp();
 
-      document.getElementById('headerSubtitle').textContent = `${appState.studentName} (${chosenLevel} • ${chosenClass}) • Kode: ${appState.respondentCode}`;
+      const subtitleEl = document.getElementById('headerSubtitle');
+      subtitleEl.textContent = `${appState.studentName} (${chosenLevel} • ${chosenClass}) • Kode: ${appState.respondentCode}`;
+      subtitleEl.classList.remove('hidden');
 
       hideAllScreens();
       document.getElementById('interviewScreen').classList.remove('hidden');
@@ -2099,7 +2101,9 @@
       document.getElementById('studentLevelSelect').value = '';
       handleLevelChange('');
       document.getElementById('autoCodeBadge').textContent = appState.respondentCode;
-      document.getElementById('headerSubtitle').textContent = 'Wawancara Suara Siswa';
+      const subtitleEl = document.getElementById('headerSubtitle');
+      subtitleEl.textContent = '';
+      subtitleEl.classList.add('hidden');
       document.getElementById('micTestResultBox').classList.add('hidden');
       document.getElementById('uploadProgressBox').classList.add('hidden');
       const btnSubmit = document.getElementById('btnSubmitToResearcher');
@@ -2152,7 +2156,9 @@
       document.getElementById('btnOpenResearcherModal').classList.add('hidden');
       document.getElementById('btnExitResearcherMode').classList.remove('hidden');
       document.getElementById('btnExitResearcherMode').classList.add('inline-flex');
-      document.getElementById('headerSubtitle').textContent = 'Panel Peneliti • Kelola & Unduh Rekaman';
+      const subtitleEl = document.getElementById('headerSubtitle');
+      subtitleEl.textContent = 'Panel Peneliti • Kelola & Unduh Rekaman';
+      subtitleEl.classList.remove('hidden');
 
       document.getElementById('researcherDashboardScreen').classList.remove('hidden');
       refreshLucideIcons();
@@ -2167,9 +2173,14 @@
       document.getElementById('btnExitResearcherMode').classList.add('hidden');
       document.getElementById('btnExitResearcherMode').classList.remove('inline-flex');
       document.getElementById('btnOpenResearcherModal').classList.remove('hidden');
-      document.getElementById('headerSubtitle').textContent = appState.studentName
-        ? `${appState.studentName} • Kode: ${appState.respondentCode}`
-        : 'Wawancara Suara Siswa';
+      const subtitleEl = document.getElementById('headerSubtitle');
+      if (appState.studentName) {
+        subtitleEl.textContent = `${appState.studentName} • Kode: ${appState.respondentCode}`;
+        subtitleEl.classList.remove('hidden');
+      } else {
+        subtitleEl.textContent = '';
+        subtitleEl.classList.add('hidden');
+      }
 
       hideAllScreens();
       document.getElementById('welcomeScreen').classList.remove('hidden');
