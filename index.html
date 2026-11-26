@@ -783,6 +783,7 @@
       getFirestore,
       doc,
       getDoc,
+      getDocs,
       setDoc,
       deleteDoc,
       collection,
@@ -1058,38 +1059,67 @@
       return formatRespondentCode(1);
     }
 
+    async function getSavedRespondentCodes() {
+      const used = new Set();
+      const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions');
+      const snap = await getDocs(colRef);
+      snap.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data && !data.isAudioPart && data.kode_responden) {
+          used.add(String(data.kode_responden).trim());
+        }
+      });
+      return used;
+    }
+
     async function fetchPreviewRespondentCode() {
       if (!isFirebaseConfigured()) return formatRespondentCode(1);
       const user = await initFirebaseAuth();
       if (!user || !db) return formatRespondentCode(1);
       try {
-        const counterRef = doc(db, 'artifacts', appId, 'public', 'data', 'researcher_settings', 'counter');
-        const snap = await getDoc(counterRef);
-        const lastNumber = snap.exists() && typeof snap.data().lastNumber === 'number'
-          ? snap.data().lastNumber
-          : 0;
-        return formatRespondentCode(lastNumber + 1);
+        const usedCodes = await getSavedRespondentCodes();
+        let num = 1;
+        while (usedCodes.has(formatRespondentCode(num))) {
+          num++;
+        }
+        return formatRespondentCode(num);
       } catch (err) {
-        console.warn('Gagal membaca nomor urut responden:', err);
+        console.warn('Gagal membaca daftar kode responden:', err);
         return formatRespondentCode(1);
       }
     }
 
     async function claimNextRespondentCode() {
-      const counterRef = doc(db, 'artifacts', appId, 'public', 'data', 'researcher_settings', 'counter');
-      const nextNum = await runTransaction(db, async (transaction) => {
-        const snap = await transaction.get(counterRef);
-        const currentNum = snap.exists() && typeof snap.data().lastNumber === 'number'
-          ? snap.data().lastNumber
-          : 0;
-        const updatedNum = currentNum + 1;
-        transaction.set(counterRef, {
-          lastNumber: updatedNum,
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
-        return updatedNum;
-      });
-      return formatRespondentCode(nextNum);
+      const usedCodes = await getSavedRespondentCodes();
+      const nowMs = Date.now();
+      const LOCK_TTL_MS = 5 * 60 * 1000; // 5 menit masa tunggu pengiriman
+
+      for (let num = 1; num < 10000; num++) {
+        const candidate = formatRespondentCode(num);
+        if (usedCodes.has(candidate)) continue;
+
+        const claimRef = doc(db, 'artifacts', appId, 'public', 'data', 'researcher_settings', `claim_${candidate}`);
+        const claimed = await runTransaction(db, async (transaction) => {
+          const snap = await transaction.get(claimRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            const claimedAtMs = typeof data.claimedAtMs === 'number' ? data.claimedAtMs : 0;
+            // Jika belum selesai kirim & belum kedaluwarsa 5 menit, berarti sedang dipakai siswa lain
+            if (nowMs - claimedAtMs < LOCK_TTL_MS) {
+              return false;
+            }
+          }
+          transaction.set(claimRef, {
+            code: candidate,
+            claimedAtMs: nowMs,
+            updatedAt: new Date().toISOString()
+          });
+          return true;
+        });
+
+        if (claimed) return candidate;
+      }
+      return formatRespondentCode(1);
     }
 
     async function regenerateRespondentCode(silent = false) {
@@ -1267,20 +1297,6 @@
       }
 
       appState.studentName = cleanedName;
-      if (!appState.hasClaimedCode && isFirebaseConfigured()) {
-        try {
-          const user = await initFirebaseAuth();
-          if (user && db) {
-            const uniqueCode = await claimNextRespondentCode();
-            appState.respondentCode = uniqueCode;
-            appState.hasClaimedCode = true;
-            const badge = document.getElementById('autoCodeBadge');
-            if (badge) badge.textContent = uniqueCode;
-          }
-        } catch (err) {
-          console.warn('Menunda klaim kode hingga pengiriman:', err);
-        }
-      }
       if (!appState.respondentCode) appState.respondentCode = generateRespondentCode();
       if (!appState.sessionTimestamp) appState.sessionTimestamp = createSessionTimestamp();
 
@@ -2397,6 +2413,11 @@
         }
 
         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions', docId));
+        if (sub && sub.kode_responden) {
+          try {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'researcher_settings', `claim_${sub.kode_responden}`));
+          } catch (e) {}
+        }
         showToast('Data responden berhasil dihapus.', 'success');
       } catch (err) {
         console.error(err);
