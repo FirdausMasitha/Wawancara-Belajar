@@ -652,7 +652,7 @@
               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-display font-bold text-xs sm:text-sm shadow-md shadow-indigo-600/20 transition active:scale-[0.98]"
             >
               <i data-lucide="archive" class="w-4 h-4"></i>
-              <span>Unduh Semua Data (ZIP)</span>
+              <span id="btnDownloadZipLabel">Unduh Semua Data (ZIP)</span>
             </button>
           </div>
         </div>
@@ -668,7 +668,16 @@
               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
             />
           </div>
-          <div class="text-xs text-slate-500 font-medium px-2">
+          <div class="sm:w-52 shrink-0">
+            <select
+              id="researcherClassFilter"
+              onchange="renderResearcherList()"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            >
+              <option value="">Semua Kelas</option>
+            </select>
+          </div>
+          <div class="text-xs text-slate-500 font-medium px-2 shrink-0">
             Total terkumpul: <strong id="totalSubmissionsBadge" class="text-slate-900">0</strong> responden
           </div>
         </div>
@@ -2237,11 +2246,32 @@
       return '';
     }
 
-    function renderResearcherList() {
-      const container = document.getElementById('researcherSubmissionsList');
-      const queryStr = (document.getElementById('researcherSearchInput').value || '').trim().toLowerCase();
+    function getClassLabel(sub) {
+      if (sub.jenjang && sub.kelas) return `${sub.jenjang} - ${sub.kelas}`;
+      if (sub.jenjang) return sub.jenjang;
+      if (sub.kelas) return sub.kelas;
+      return 'Tanpa Kelas';
+    }
 
-      const filtered = appState.submissions.filter((item) => {
+    function populateClassFilterOptions() {
+      const selectEl = document.getElementById('researcherClassFilter');
+      if (!selectEl) return;
+      const prevVal = selectEl.value;
+      const uniqueClasses = Array.from(new Set(appState.submissions.map(getClassLabel))).sort();
+      selectEl.innerHTML = '<option value="">Semua Kelas</option>' +
+        uniqueClasses.map((cls) => `<option value="${escapeHtml(cls)}">${escapeHtml(cls)}</option>`).join('');
+      if (uniqueClasses.includes(prevVal)) {
+        selectEl.value = prevVal;
+      }
+    }
+
+    function getFilteredSubmissions() {
+      const queryStr = (document.getElementById('researcherSearchInput').value || '').trim().toLowerCase();
+      const classFilterEl = document.getElementById('researcherClassFilter');
+      const selectedClass = classFilterEl ? classFilterEl.value : '';
+
+      return appState.submissions.filter((item) => {
+        if (selectedClass && getClassLabel(item) !== selectedClass) return false;
         if (!queryStr) return true;
         const nama = (item.nama_siswa || '').toLowerCase();
         const kode = (item.kode_responden || '').toLowerCase();
@@ -2249,6 +2279,21 @@
         const kelas = (item.kelas || '').toLowerCase();
         return nama.includes(queryStr) || kode.includes(queryStr) || jenjang.includes(queryStr) || kelas.includes(queryStr);
       });
+    }
+
+    function renderResearcherList() {
+      populateClassFilterOptions();
+      const container = document.getElementById('researcherSubmissionsList');
+      const filtered = getFilteredSubmissions();
+      const classFilterEl = document.getElementById('researcherClassFilter');
+      const selectedClass = classFilterEl ? classFilterEl.value : '';
+
+      const zipLabelEl = document.getElementById('btnDownloadZipLabel');
+      if (zipLabelEl) {
+        zipLabelEl.textContent = selectedClass
+          ? `Unduh ZIP ${selectedClass} (${filtered.length})`
+          : 'Unduh Semua Data (ZIP)';
+      }
 
       document.getElementById('totalSubmissionsBadge').textContent = appState.submissions.length;
       if (isFirebaseConfigured()) {
@@ -2514,48 +2559,76 @@
     }
 
     async function downloadAllRespondentsZip() {
-      if (appState.submissions.length === 0) {
-        showToast('Belum ada data responden untuk diunduh.', 'warning');
+      const targets = getFilteredSubmissions();
+      if (targets.length === 0) {
+        showToast('Belum ada data responden sesuai filter untuk diunduh.', 'warning');
         return;
       }
+
+      const classFilterEl = document.getElementById('researcherClassFilter');
+      const selectedClass = classFilterEl ? classFilterEl.value : '';
 
       const btn = document.getElementById('btnDownloadAllRespondentsZip');
       const origHtml = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = `<span>Mengemas ${appState.submissions.length} Responden...</span>`;
+      btn.innerHTML = `<span>Mengemas ${targets.length} Responden...</span>`;
 
       try {
         const masterZip = new JSZip();
         const masterKeyLines = [
           '====================================================',
           'DAFTAR PEMETAAN KODE RESPONDEN & NAMA SISWA',
-          'PENELITIAN MATHEMATICS ANXIETY',
+          selectedClass ? `KELAS: ${selectedClass}` : 'SEMUA KELAS (DIKELOMPOKKAN PER KELAS)',
           '====================================================',
           ''
         ];
 
-        for (const sub of appState.submissions) {
-          const code = sub.kode_responden || 'MA-XXXX';
-          const folder = masterZip.folder(code);
-          const answers = Array.isArray(sub.jawaban) ? sub.jawaban : [];
+        // Kelompokkan responden berdasarkan kelas
+        const byClass = {};
+        for (const sub of targets) {
+          const clsLabel = getClassLabel(sub);
+          if (!byClass[clsLabel]) byClass[clsLabel] = [];
+          byClass[clsLabel].push(sub);
+        }
 
-          masterKeyLines.push(`${code} | Nama: ${sub.nama_siswa} | Waktu: ${sub.waktu_kirim_label || '-'} | Audio: ${sub.jumlah_audio || 0}`);
+        for (const [clsLabel, groupSubs] of Object.entries(byClass)) {
+          const safeClassFolder = clsLabel.replace(/[^a-zA-Z0-9_-]+/g, '_');
+          const classContainer = selectedClass ? masterZip : masterZip.folder(safeClassFolder);
+          const classTranscriptLines = [
+            '====================================================',
+            `REKAP TRANSKRIP & JAWABAN WAWANCARA — ${clsLabel}`,
+            `Jumlah Responden: ${groupSubs.length}`,
+            '====================================================',
+            ''
+          ];
 
-          for (const ans of answers) {
-            if (ans.hasAudio) {
-              try {
-                const blob = await fetchAudioBlobFromAnswer(ans);
-                if (blob) {
-                  const fname = ans.fileName || `${code}_${ans.questionId}.webm`;
-                  folder.file(fname, blob);
+          for (const sub of groupSubs) {
+            const code = sub.kode_responden || 'S00';
+            const folder = classContainer.folder(code);
+            const answers = Array.isArray(sub.jawaban) ? sub.jawaban : [];
+
+            masterKeyLines.push(`${code} | ${clsLabel} | Nama: ${sub.nama_siswa} | Waktu: ${sub.waktu_kirim_label || '-'} | Audio: ${sub.jumlah_audio || 0}`);
+
+            for (const ans of answers) {
+              if (ans.hasAudio) {
+                try {
+                  const blob = await fetchAudioBlobFromAnswer(ans);
+                  if (blob) {
+                    const fname = ans.fileName || `${code}_${ans.questionId}.webm`;
+                    folder.file(fname, blob);
+                  }
+                } catch (e) {
+                  console.warn('Skip audio gagal unduh:', ans.fileName);
                 }
-              } catch (e) {
-                console.warn('Skip audio gagal unduh:', ans.fileName);
               }
             }
+
+            const summaryText = buildSummaryTxtForRespondent(sub);
+            folder.file(`Ringkasan_Jawaban_${code}.txt`, summaryText);
+            classTranscriptLines.push(summaryText, '');
           }
 
-          folder.file(`Ringkasan_Jawaban_${code}.txt`, buildSummaryTxtForRespondent(sub));
+          classContainer.file(`REKAP_TRANSKRIP_${safeClassFolder}.txt`, classTranscriptLines.join('\n'));
         }
 
         masterZip.file('DAFTAR_KODE_DAN_NAMA_SISWA.txt', masterKeyLines.join('\n'));
@@ -2564,13 +2637,16 @@
         const url = URL.createObjectURL(zipBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Semua_Wawancara_MathAnxiety_${createSessionTimestamp()}.zip`;
+        const safePrefix = selectedClass
+          ? `Wawancara_${selectedClass.replace(/[^a-zA-Z0-9_-]+/g, '_')}`
+          : 'Semua_Wawancara_PerKelas';
+        a.download = `${safePrefix}_${createSessionTimestamp()}.zip`;
         document.body.appendChild(a);
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
 
-        showToast('Seluruh data responden berhasil diunduh dalam satu arsip ZIP!', 'success');
+        showToast(`Berhasil mengunduh arsip ZIP (${targets.length} responden)!`, 'success');
       } catch (err) {
         console.error(err);
         showToast('Terjadi kendala saat mengemas seluruh data ZIP.', 'error');
