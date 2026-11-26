@@ -689,11 +689,6 @@
             PIN salah. Silakan periksa kembali PIN peneliti Anda.
           </p>
         </div>
-
-        <div id="defaultPinHintBox" class="p-3 rounded-xl bg-amber-50 border border-amber-200/80 text-xs text-amber-900 flex items-start gap-2">
-          <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5"></i>
-          <span>PIN default awal adalah <strong class="font-mono">2026</strong>. Anda dapat menggantinya setelah masuk ke Panel Peneliti.</span>
-        </div>
       </div>
 
       <div class="flex items-center justify-end gap-2 pt-1">
@@ -1027,6 +1022,7 @@
     const appState = {
       studentName: '',
       respondentCode: '',
+      hasClaimedCode: false,
       sessionTimestamp: '',
       currentIndex: 0,
       answers: {},
@@ -1258,7 +1254,7 @@
     // =========================================================
     // 5. ALUR WAWANCARA SISWA
     // =========================================================
-    function startInterview() {
+    async function startInterview() {
       const nameInput = document.getElementById('studentNameInput');
       const cleanedName = (nameInput.value || '').trim();
 
@@ -1271,6 +1267,20 @@
       }
 
       appState.studentName = cleanedName;
+      if (!appState.hasClaimedCode && isFirebaseConfigured()) {
+        try {
+          const user = await initFirebaseAuth();
+          if (user && db) {
+            const uniqueCode = await claimNextRespondentCode();
+            appState.respondentCode = uniqueCode;
+            appState.hasClaimedCode = true;
+            const badge = document.getElementById('autoCodeBadge');
+            if (badge) badge.textContent = uniqueCode;
+          }
+        } catch (err) {
+          console.warn('Menunda klaim kode hingga pengiriman:', err);
+        }
+      }
       if (!appState.respondentCode) appState.respondentCode = generateRespondentCode();
       if (!appState.sessionTimestamp) appState.sessionTimestamp = createSessionTimestamp();
 
@@ -1744,10 +1754,14 @@
           throw new Error('Koneksi layanan penyimpanan belum siap.');
         }
 
-        progressText.textContent = 'Menetapkan nomor urut responden...';
-        const code = await claimNextRespondentCode();
-        appState.respondentCode = code;
-        document.getElementById('headerSubtitle').textContent = `${appState.studentName} • Kode: ${code}`;
+        let code = appState.respondentCode;
+        if (!appState.hasClaimedCode) {
+          progressText.textContent = 'Menetapkan nomor urut responden...';
+          code = await claimNextRespondentCode();
+          appState.respondentCode = code;
+          appState.hasClaimedCode = true;
+          document.getElementById('headerSubtitle').textContent = `${appState.studentName} • Kode: ${code}`;
+        }
 
         const studentName = appState.studentName;
         const sessionStamp = appState.sessionTimestamp || createSessionTimestamp();
@@ -1756,7 +1770,8 @@
         const answersPayload = [];
         let processedCount = 0;
         let audioCount = 0;
-        let canUseStorage = Boolean(storage);
+        // Langsung simpan ke Firestore agar cepat & tidak tertahan Firebase Storage
+        let canUseStorage = false;
 
         for (let idx = 0; idx < INTERVIEW_QUESTIONS.length; idx++) {
           const q = INTERVIEW_QUESTIONS[idx];
@@ -1861,7 +1876,8 @@
 
       } catch (err) {
         console.error('Gagal mengirim jawaban:', err);
-        showToast('Gagal mengirim jawaban ke server. Periksa koneksi internet dan aturan Firebase lalu coba lagi.', 'error');
+        const detailErr = err && (err.code || err.message) ? ` (${err.code || err.message})` : '';
+        showToast(`Gagal mengirim jawaban${detailErr}. Coba tekan Kirim lagi.`, 'error');
         btnSubmit.disabled = false;
         btnSubmit.classList.remove('opacity-60', 'pointer-events-none');
         progressBox.classList.add('hidden');
@@ -1875,6 +1891,7 @@
 
       appState.studentName = '';
       appState.respondentCode = generateRespondentCode();
+      appState.hasClaimedCode = false;
       appState.sessionTimestamp = '';
       appState.currentIndex = 0;
       appState.answers = {};
@@ -1905,7 +1922,6 @@
       }
       document.getElementById('researcherPinInput').value = '';
       document.getElementById('pinErrorMsg').classList.add('hidden');
-      document.getElementById('defaultPinHintBox').classList.toggle('hidden', appState.isCustomPinSet);
       document.getElementById('researcherLoginModal').classList.remove('hidden');
       refreshLucideIcons();
       setTimeout(() => document.getElementById('researcherPinInput').focus(), 80);
