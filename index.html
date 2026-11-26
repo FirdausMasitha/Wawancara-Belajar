@@ -868,6 +868,35 @@
       });
     }
 
+    async function uploadToStorageWithTimeout(fileRef, blob, metadata, timeoutMs = 5000) {
+      const uploadPromise = (async () => {
+        await uploadBytes(fileRef, blob, metadata);
+        return await getDownloadURL(fileRef);
+      })();
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Storage upload timeout')), timeoutMs);
+      });
+      return await Promise.race([uploadPromise, timeoutPromise]);
+    }
+
+    async function saveAudioFallbackChunks(submissionDocId, questionId, dataUrl) {
+      const CHUNK_SIZE = 600000;
+      const chunkIds = [];
+      for (let offset = 0, partIdx = 0; offset < dataUrl.length; offset += CHUNK_SIZE, partIdx++) {
+        const chunkId = `${submissionDocId}__audio__${questionId}__${partIdx}`;
+        const chunkRef = doc(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions', chunkId);
+        await setDoc(chunkRef, {
+          isAudioPart: true,
+          parentId: submissionDocId,
+          questionId,
+          partIndex: partIdx,
+          data: dataUrl.slice(offset, offset + CHUNK_SIZE)
+        });
+        chunkIds.push(chunkId);
+      }
+      return chunkIds;
+    }
+
     // =========================================================
     // 1. DATA LENGKAP PERTANYAAN WAWANCARA
     // =========================================================
@@ -1011,6 +1040,7 @@
       activeResearcherPin: '2026',
       isCustomPinSet: false,
       submissions: [],
+      audioPartsMap: {},
       expandedRespondentId: null,
       pendingDeleteDocId: null
     };
@@ -1368,7 +1398,15 @@
         appState.recordingSeconds = 0;
 
         const { mime, ext } = getSupportedAudioMime();
-        const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        let recorder;
+        try {
+          const recOpts = mime
+            ? { mimeType: mime, audioBitsPerSecond: 24000 }
+            : { audioBitsPerSecond: 24000 };
+          recorder = new MediaRecorder(stream, recOpts);
+        } catch (optErr) {
+          recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+        }
         appState.mediaRecorder = recorder;
         appState.isRecording = true;
 
@@ -1718,6 +1756,7 @@
         const answersPayload = [];
         let processedCount = 0;
         let audioCount = 0;
+        let canUseStorage = Boolean(storage);
 
         for (let idx = 0; idx < INTERVIEW_QUESTIONS.length; idx++) {
           const q = INTERVIEW_QUESTIONS[idx];
@@ -1736,28 +1775,33 @@
           let downloadURL = '';
           let storagePath = '';
           let inlineDataUrl = '';
+          let audioChunkIds = [];
           const ext = hasAudio ? (ans.ext || 'webm') : '';
           const fileName = hasAudio ? `${code}_${q.id}.${ext}` : '';
 
           if (hasAudio) {
             audioCount++;
             storagePath = `wawancara_math_anxiety/${code}/${fileName}`;
-            try {
-              if (storage) {
+            if (canUseStorage) {
+              try {
                 const fileRef = storageRef(storage, storagePath);
-                await uploadBytes(fileRef, ans.blob, {
-                  contentType: ans.blob.type || 'audio/webm'
-                });
-                downloadURL = await getDownloadURL(fileRef);
-              } else {
-                throw new Error('Storage tidak tersedia');
+                downloadURL = await uploadToStorageWithTimeout(
+                  fileRef,
+                  ans.blob,
+                  { contentType: ans.blob.type || 'audio/webm' },
+                  5000
+                );
+              } catch (storageErr) {
+                console.warn('Storage tidak merespons, beralih ke penyimpanan database:', storageErr);
+                canUseStorage = false;
+                storagePath = '';
               }
-            } catch (storageErr) {
-              if (ans.blob.size < 700000) {
-                inlineDataUrl = await blobToDataUrl(ans.blob);
-              } else {
-                throw storageErr;
-              }
+            }
+
+            if (!downloadURL) {
+              storagePath = '';
+              const dataUrl = await blobToDataUrl(ans.blob);
+              audioChunkIds = await saveAudioFallbackChunks(submissionDocId, q.id, dataUrl);
             }
           }
 
@@ -1771,6 +1815,7 @@
             storagePath,
             downloadURL,
             inlineDataUrl,
+            audioChunkIds,
             durationSec: hasAudio ? (ans.durationSec || 0) : 0,
             textNote: hasNote ? ans.textNote.trim() : ''
           });
@@ -1934,10 +1979,17 @@
         colRef,
         (snapshot) => {
           const items = [];
+          const partsMap = {};
           snapshot.forEach((docSnap) => {
-            items.push({ id: docSnap.id, ...docSnap.data() });
+            const data = docSnap.data();
+            if (data && data.isAudioPart) {
+              partsMap[docSnap.id] = data.data || '';
+            } else {
+              items.push({ id: docSnap.id, ...data });
+            }
           });
           items.sort((a, b) => (b.waktu_kirim_iso || '').localeCompare(a.waktu_kirim_iso || ''));
+          appState.audioPartsMap = partsMap;
           appState.submissions = items;
           renderResearcherList();
         },
@@ -1946,6 +1998,15 @@
           showToast('Gagal memuat daftar responden dari server.', 'error');
         }
       );
+    }
+
+    function resolveAudioSource(ans) {
+      if (ans.downloadURL) return ans.downloadURL;
+      if (ans.inlineDataUrl) return ans.inlineDataUrl;
+      if (Array.isArray(ans.audioChunkIds) && ans.audioChunkIds.length > 0) {
+        return ans.audioChunkIds.map((cid) => appState.audioPartsMap[cid] || '').join('');
+      }
+      return '';
     }
 
     function renderResearcherList() {
@@ -1989,7 +2050,7 @@
         let detailHtml = '';
         if (isExpanded) {
           const itemsHtml = answers.map((ans) => {
-            const audioSrc = ans.downloadURL || ans.inlineDataUrl || '';
+            const audioSrc = resolveAudioSource(ans);
             return `
               <div class="p-3.5 rounded-xl bg-white border border-slate-200 space-y-2">
                 <div class="flex items-start justify-between gap-2">
@@ -2092,7 +2153,7 @@
     // 9. UNDUH ZIP SATUAN & MASSAL
     // =========================================================
     async function fetchAudioBlobFromAnswer(ans) {
-      const src = ans.downloadURL || ans.inlineDataUrl;
+      const src = resolveAudioSource(ans);
       if (!src) return null;
       const response = await fetch(src);
       if (!response.ok) throw new Error('Gagal mengunduh file audio');
@@ -2302,12 +2363,19 @@
         const user = await initFirebaseAuth();
         if (!user || !db) return;
 
-        if (sub && Array.isArray(sub.jawaban) && storage) {
+        if (sub && Array.isArray(sub.jawaban)) {
           for (const ans of sub.jawaban) {
-            if (ans.storagePath) {
+            if (ans.storagePath && storage) {
               try {
                 await deleteObject(storageRef(storage, ans.storagePath));
               } catch (e) {}
+            }
+            if (Array.isArray(ans.audioChunkIds)) {
+              for (const cid of ans.audioChunkIds) {
+                try {
+                  await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'wawancara_submissions', cid));
+                } catch (e) {}
+              }
             }
           }
         }
